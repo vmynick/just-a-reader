@@ -225,6 +225,17 @@
       "source": "https://standardebooks.org/ebooks/robert-louis-stevenson/treasure-island"
     },
     {
+      "id": "pg-236",
+      "title": "The Jungle Book",
+      "author": "Rudyard Kipling",
+      "lang": "en",
+      "words": 54174,
+      "chapters": 15,
+      "bytes": 299056,
+      "file": "books/en/pg-236.json",
+      "source": "https://www.gutenberg.org/ebooks/236"
+    },
+    {
       "id": "mek-00600",
       "title": "A gólyakalifa",
       "author": "Babits Mihály",
@@ -525,5 +536,5 @@
       "source": "https://mek.oszk.hu/01000/01010/"
     }
   ],
-  "updated": "2026-11-24T20:46:49.892Z"
+  "updated": "2026-11-24T20:58:37.200Z"
 }

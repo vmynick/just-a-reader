@@ -42,8 +42,6 @@ export function htmlToBlocks(html) {
   s = s.replace(/<!--[\s\S]*?-->/g, ' ');
   s = s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1');
   s = s.replace(/<(head|script|style|title|svg|math|rt|rp|noscript|template|object|iframe)\b[\s\S]*?<\/\1\s*>/gi, ' ');
-  // Project Gutenberg boilerplate (licence header/footer).
-  s = s.replace(/<(section|div)\b[^>]*(?:pg-boilerplate|id\s*=\s*["']pg-(?:header|footer)["'])[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ');
   // Footnote references: <a epub:type="noteref">1</a>, <sup>12</sup>.
   s = s.replace(/<a\b[^>]*epub:type\s*=\s*["'][^"']*noteref[^"']*["'][^>]*>[\s\S]*?<\/a\s*>/gi, '');
   s = s.replace(/<sup\b[^>]*>\s*(?:<a\b[^>]*>)?\s*[[(]?\s*(?:\d{1,3}|\*{1,3}|[a-z])\s*[\])]?\s*(?:<\/a\s*>)?\s*<\/sup\s*>/gi, '');

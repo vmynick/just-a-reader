@@ -15,6 +15,26 @@ export function isZip(bytes) {
 }
 
 export async function fileToBook(name, bytes) {
+  return stripBoilerplate(await convertAny(name, bytes));
+}
+
+const PG_START = /^\*{3}\s*START OF (THE|THIS) PROJECT GUTENBERG/i;
+const PG_END = /^\*{3}\s*END OF (THE|THIS) PROJECT GUTENBERG/i;
+
+/** Drop Project Gutenberg licence header/footer (text before START and from END on). */
+export function stripBoilerplate(book) {
+  const lines = book.chapters.flatMap((c, ci) => c.text.split('\n').map((text) => ({ ci, text })))
+    .filter((l) => !/^\{\d{1,5}\}$|^\[Illustration\]$/i.test(l.text)); // image placeholders
+  const start = lines.findIndex((l) => PG_START.test(l.text));
+  const end = lines.findIndex((l) => PG_END.test(l.text));
+  const keep = lines.slice(start + 1, end < 0 ? lines.length : end);
+  const chapters = book.chapters
+    .map((c, ci) => ({ title: c.title, text: keep.filter((l) => l.ci === ci).map((l) => l.text).join('\n') }))
+    .filter((c) => c.text.trim());
+  return { ...book, chapters: chapters.length ? chapters : book.chapters };
+}
+
+async function convertAny(name, bytes) {
   const ext = extOf(name);
   if (isZip(bytes)) {
     const zip = await readZip(bytes);

@@ -229,9 +229,9 @@
       "title": "The Jungle Book",
       "author": "Rudyard Kipling",
       "lang": "en",
-      "words": 54174,
+      "words": 51186,
       "chapters": 15,
-      "bytes": 299056,
+      "bytes": 280093,
       "file": "books/en/pg-236.json",
       "source": "https://www.gutenberg.org/ebooks/236"
     },
@@ -536,5 +536,5 @@
       "source": "https://mek.oszk.hu/01000/01010/"
     }
   ],
-  "updated": "2026-11-24T20:58:37.200Z"
+  "updated": "2026-11-24T21:00:09.479Z"
 }

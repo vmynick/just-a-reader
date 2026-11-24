@@ -123,6 +123,15 @@ test('MEK framed HTML zip: follows frameset and TOC page, merges tiny part title
   assert.deepEqual(book.chapters.map((c) => c.title), ['ELSŐ RÉSZ – ELSŐ SZÍN', 'MÁSODIK SZÍN']);
 });
 
+test('Project Gutenberg licence header and footer are removed', async () => {
+  const txt = ['Title: The Jungle Book', 'Author: Rudyard Kipling', '*** START OF THE PROJECT GUTENBERG EBOOK THE JUNGLE BOOK ***',
+    'CHAPTER I', 'Mowgli’s Brothers.', 'CHAPTER II', 'Kaa’s Hunting.', '*** END OF THE PROJECT GUTENBERG EBOOK THE JUNGLE BOOK ***',
+    'Updated editions will replace the previous one.'].join('\n\n');
+  const b = await fileToBook('pg236.txt', new TextEncoder().encode(txt));
+  assert.deepEqual(b.chapters.map((c) => c.title), ['CHAPTER I', 'CHAPTER II']);
+  assert.ok(!b.chapters.some((c) => /Gutenberg|Updated editions|Author:/.test(c.text)));
+});
+
 test('plain text and FB2 files', async () => {
   const txt = await fileToBook('jegyzet.txt', new TextEncoder().encode('Első bekezdés.\n\nMásodik bekezdés.'));
   assert.equal(txt.title, 'jegyzet');

@@ -1,0 +1,59 @@
+name: Könyv hozzáadása
+
+# Telefonról is indítható: GitHub → Actions → "Könyv hozzáadása" → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Link: MEK (https://mek.oszk.hu/00600/00656/), Standard Ebooks, Gutenberg (https://www.gutenberg.org/ebooks/1342) vagy közvetlen .epub/.txt'
+        required: true
+      lang:
+        description: 'Nyelv'
+        type: choice
+        options: [auto, hu, en]
+        default: auto
+      title:
+        description: 'Cím (nem kötelező, felülírja a könyvben lévőt)'
+        required: false
+      author:
+        description: 'Szerző (nem kötelező)'
+        required: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Letöltés és átalakítás
+        env:
+          SOURCE: ${{ inputs.source }}
+          BOOK_LANG: ${{ inputs.lang }}
+          TITLE: ${{ inputs.title }}
+          AUTHOR: ${{ inputs.author }}
+        run: |
+          args=("$SOURCE")
+          if [ "$BOOK_LANG" != "auto" ]; then args+=(--lang "$BOOK_LANG"); fi
+          if [ -n "$TITLE" ]; then args+=(--title "$TITLE"); fi
+          if [ -n "$AUTHOR" ]; then args+=(--author "$AUTHOR"); fi
+          node tools/add-book.mjs "${args[@]}" | tee result.txt
+          echo "### $(head -1 result.txt)" >> "$GITHUB_STEP_SUMMARY"
+      - run: npm test
+      - name: Mentés a tárolóba
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add books
+          if git diff --cached --quiet; then echo "Nincs változás."; exit 0; fi
+          git commit -m "Könyv hozzáadva: $(head -1 result.txt | cut -c1-120)"
+          git push
+      - name: Weboldal frissítése
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main

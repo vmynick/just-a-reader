@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="hu" data-version="1.0.0">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Just A Reader</title>
+  <meta name="description" content="Szavanként villantó gyorsolvasó telefonra: saját szövegek és e-könyvek.">
+  <meta name="theme-color" content="#161a33">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon-32.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preload" href="fonts/literata-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="css/app.css">
+  <script>
+    // Apply the saved theme before first paint to avoid a flash.
+    try {
+      const s = JSON.parse(localStorage.getItem('jar.settings') || '{}');
+      if (s.bg) { const r = document.documentElement.style; r.setProperty('--bg', s.bg); r.setProperty('--fg', s.fg); r.setProperty('--pivot', s.pivot); }
+    } catch (e) { /* defaults */ }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <main id="v-library" class="view page" hidden></main>
+  <main id="v-browse" class="view page" hidden></main>
+  <main id="v-editor" class="view page" hidden></main>
+  <main id="v-settings" class="view page" hidden></main>
+  <main id="v-stats" class="view page" hidden></main>
+
+  <section id="v-reader" class="view reader paused" hidden aria-label="Olvasó">
+    <div id="r-stage" class="r-stage">
+      <div class="r-guide top" aria-hidden="true"></div>
+      <div class="r-guide bottom" aria-hidden="true"></div>
+      <div id="r-word" class="r-word" aria-live="off"><span class="pre"></span><span class="piv"></span><span class="post"></span></div>
+      <div id="r-context" class="r-context"></div>
+    </div>
+    <div id="r-wpm" class="r-info tl"></div>
+    <div id="r-count" class="r-info tr"></div>
+    <div id="r-chapter" class="r-info bl"></div>
+    <div id="r-left" class="r-info br"></div>
+    <div class="r-progress" aria-hidden="true"><div id="r-bar"></div></div>
+    <div id="r-flash" class="r-flash" aria-live="polite"></div>
+    <button type="button" id="r-menu-btn" class="r-menu-btn" aria-label="Menü">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div id="r-panel" class="r-panel" hidden></div>
+  </section>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><p style="padding:2rem">Az alkalmazáshoz engedélyezni kell a JavaScriptet.</p></noscript>
+</body>
+</html>

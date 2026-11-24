@@ -1,0 +1,54 @@
+# Az induló katalógus. Soronként egy forrás (+ opciók). Futtatás:
+#   node tools/add-book.mjs --list tools/seed-books.txt
+# Csak közkincs művek (a szerző 70+ éve halott, és 1931 előtt jelent meg).
+
+# --- Magyar (MEK – Magyar Elektronikus Könyvtár) ---
+https://mek.oszk.hu/00600/00656/ --preinstalled      # Gárdonyi Géza – Egri csillagok
+https://mek.oszk.hu/00900/00960/ --preinstalled      # Molnár Ferenc – A Pál utcai fiúk
+https://mek.oszk.hu/00900/00954/ --preinstalled      # Mikszáth Kálmán – Szent Péter esernyője
+https://mek.oszk.hu/00600/00662/                     # Gárdonyi Géza – A láthatatlan ember
+https://mek.oszk.hu/00600/00661/                     # Gárdonyi Géza – Isten rabjai
+https://mek.oszk.hu/00900/00948/                     # Mikszáth Kálmán – A Noszty fiú esete Tóth Marival
+https://mek.oszk.hu/00800/00899/                     # Mikszáth Kálmán – Beszterce ostroma
+https://mek.oszk.hu/00900/00944/                     # Mikszáth Kálmán – Különös házasság
+https://mek.oszk.hu/00900/00950/                     # Mikszáth Kálmán – A jó palócok
+https://mek.oszk.hu/04700/04772/                     # Kosztolányi Dezső – Édes Anna
+https://mek.oszk.hu/00700/00754/                     # Kosztolányi Dezső – Pacsirta
+https://mek.oszk.hu/03200/03254/                     # Kosztolányi Dezső – Nero, a véres költő
+https://mek.oszk.hu/00700/00719/                     # Karinthy Frigyes – Tanár úr kérem
+https://mek.oszk.hu/00700/00716/                     # Karinthy Frigyes – Így írtok ti (válogatás)
+https://mek.oszk.hu/00700/00721/                     # Karinthy Frigyes – Utazás Faremidóba
+https://mek.oszk.hu/00700/00715/                     # Karinthy Frigyes – Capillária
+https://mek.oszk.hu/00900/00991/                     # Móricz Zsigmond – Légy jó mindhalálig
+https://mek.oszk.hu/05000/05060/                     # Móricz Zsigmond – Sárarany
+https://mek.oszk.hu/00600/00688/                     # Jókai Mór – Az arany ember
+https://mek.oszk.hu/00800/00827/                     # Jókai Mór – Egy magyar nábob
+https://mek.oszk.hu/00800/00813/                     # Jókai Mór – Fekete gyémántok
+https://mek.oszk.hu/00800/00846/                     # Jókai Mór – A jövő század regénye
+https://mek.oszk.hu/01000/01010/                     # Petőfi Sándor – János vitéz
+https://mek.oszk.hu/00800/00875/                     # Madách Imre – Az ember tragédiája
+https://mek.oszk.hu/00600/00600/                     # Babits Mihály – A gólyakalifa
+https://mek.oszk.hu/00700/00760/                     # Krúdy Gyula – Szindbád
+https://mek.oszk.hu/02000/02028/                     # Kaffka Margit – Színek és évek
+
+# --- English (Standard Ebooks) ---
+https://standardebooks.org/ebooks/lewis-carroll/alices-adventures-in-wonderland --preinstalled
+https://standardebooks.org/ebooks/arthur-conan-doyle/the-adventures-of-sherlock-holmes --preinstalled
+https://standardebooks.org/ebooks/jane-austen/pride-and-prejudice --preinstalled
+https://standardebooks.org/ebooks/h-g-wells/the-time-machine
+https://standardebooks.org/ebooks/h-g-wells/the-war-of-the-worlds
+https://standardebooks.org/ebooks/robert-louis-stevenson/the-strange-case-of-dr-jekyll-and-mr-hyde
+https://standardebooks.org/ebooks/robert-louis-stevenson/treasure-island
+https://standardebooks.org/ebooks/oscar-wilde/the-picture-of-dorian-gray
+https://standardebooks.org/ebooks/mary-shelley/frankenstein
+https://standardebooks.org/ebooks/bram-stoker/dracula
+https://standardebooks.org/ebooks/mark-twain/the-adventures-of-tom-sawyer
+https://standardebooks.org/ebooks/jack-london/the-call-of-the-wild
+https://standardebooks.org/ebooks/charles-dickens/a-christmas-carol
+https://standardebooks.org/ebooks/f-scott-fitzgerald/the-great-gatsby
+https://standardebooks.org/ebooks/kenneth-grahame/the-wind-in-the-willows
+https://standardebooks.org/ebooks/frances-hodgson-burnett/the-secret-garden
+https://standardebooks.org/ebooks/arthur-conan-doyle/the-hound-of-the-baskervilles
+https://standardebooks.org/ebooks/jules-verne/around-the-world-in-eighty-days/george-makepeace-towle
+https://standardebooks.org/ebooks/l-frank-baum/the-wonderful-wizard-of-oz
+https://standardebooks.org/ebooks/jerome-k-jerome/three-men-in-a-boat

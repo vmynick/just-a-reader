@@ -31,7 +31,7 @@ async function route() {
   window.scrollTo(0, 0);
   switch (page) {
     case 'read': show('reader'); await reader.open(arg); break;
-    case 'browse': show('browse'); await renderBrowse(views.browse); break;
+    case 'browse': show('browse'); await renderBrowse(views.browse, arg); break;
     case 'new': show('editor'); await renderEditor(views.editor, null); break;
     case 'edit': show('editor'); await renderEditor(views.editor, arg); break;
     case 'settings': show('settings'); await renderSettings(views.settings); break;
@@ -87,10 +87,12 @@ async function drainShareInbox() {
 
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
+  // On the very first visit the worker takes control too; that is not an update.
+  const hadController = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.register('sw.js').catch(() => {});
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading || current === 'reader') return;
+    if (!hadController || reloading || current === 'reader') return;
     reloading = true;
     toast('Új verzió érhető el.', { action: 'Frissítés', onAction: () => location.reload(), ms: 10000 });
   });

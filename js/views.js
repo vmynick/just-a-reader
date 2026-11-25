@@ -27,14 +27,21 @@ export function openReader(id) {
 export async function renderLibrary(el) {
   const list = await docs.listLibrary();
   const texts = list.filter((x) => x.kind === 'text').sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  const books = list.filter((x) => x.kind !== 'text').sort((a, b) => (b.lastOpened || 0) - (a.lastOpened || 0) || coll.compare(a.title, b.title));
+  const recent = (a, b) => (b.lastOpened || 0) - (a.lastOpened || 0) || coll.compare(a.title, b.title);
+  const shorts = list.filter((x) => x.short).sort((a, b) => (b.lastOpened || 0) - (a.lastOpened || 0)
+    || coll.compare(a.author, b.author) || coll.compare(a.collection || '', b.collection || '') || (a.n ?? 0) - (b.n ?? 0));
+  const SHORT_PREVIEW = 6;
+  const showAllShorts = sessionStorage.getItem('jar.allShorts') === '1';
+  const books = list.filter((x) => x.kind !== 'text' && !x.short).sort(recent);
   const last = list.filter((x) => x.lastOpened).sort((a, b) => b.lastOpened - a.lastOpened)[0];
 
   const row = (it) => {
     const p = it.progress;
     const total = p?.total || it.wordCount || 0;
     const pct = fmtPct(p?.index || 0, total);
-    const sub = it.kind === 'text' ? `${formatNumber(it.wordCount || 0)} szó` : esc(it.author || it.fileName || '');
+    const sub = it.kind === 'text' ? `${formatNumber(it.wordCount || 0)} szó`
+      : it.short ? `${esc(it.author)}, kb. ${readingTime(it.wordCount || 0, settings().wpm)}`
+        : esc(it.author || it.fileName || '');
     const tools = it.kind === 'text'
       ? `<button type="button" class="icon-btn" data-act="edit" aria-label="Szerkesztés">${icon('edit')}</button>
          <button type="button" class="icon-btn" data-act="delete" aria-label="Törlés">${icon('trash')}</button>`
@@ -80,10 +87,16 @@ export async function renderLibrary(el) {
           ${texts.length ? `<ul class="rows">${texts.map(row).join('')}</ul>` : '<p class="empty">Még nincs saját szöveged. Írj vagy másolj be egyet az „Új szöveg” gombbal.</p>'}
         </section>
         <section class="shelf">
+          <div class="shelf-head"><h2>Rövid olvasmányok</h2>
+            <a class="btn small" href="#/browse/short">${icon('plus')}<span>Továbbiak</span></a></div>
+          ${shorts.length ? `<ul class="rows">${(showAllShorts ? shorts : shorts.slice(0, SHORT_PREVIEW)).map(row).join('')}</ul>` : '<p class="empty">Mesék, versek, novellák, pár perc alatt elolvashatók. A „Továbbiak” gombbal választhatsz.</p>'}
+          ${shorts.length > SHORT_PREVIEW ? `<button type="button" class="btn ghost small more-toggle" data-act="toggle-shorts">${showAllShorts ? 'Kevesebb mutatása' : `Mind a ${shorts.length} mutatása`}</button>` : ''}
+        </section>
+        <section class="shelf">
           <div class="shelf-head"><h2>Könyveim</h2>
             <button type="button" class="btn small" data-act="file">${icon('file')}<span>Fájl megnyitása</span></button></div>
           ${books.length ? `<ul class="rows">${books.map(row).join('')}</ul>` : '<p class="empty">Még nincs letöltött könyved.</p>'}
-          <a class="btn wide" href="#/browse">${icon('books')}<span>Könyvek böngészése</span></a>
+          <a class="btn wide" href="#/browse/book">${icon('books')}<span>Könyvek böngészése</span></a>
         </section>
       </div>
     </div>
@@ -114,6 +127,10 @@ export async function renderLibrary(el) {
         ]);
         break;
       case 'file': $('#file-input', el).click(); break;
+      case 'toggle-shorts':
+        sessionStorage.setItem('jar.allShorts', showAllShorts ? '0' : '1');
+        renderLibrary(el);
+        break;
       default:
     }
   };
@@ -129,9 +146,9 @@ export async function renderLibrary(el) {
 }
 
 // ---------------------------------------------------------------- browse
-export async function renderBrowse(el) {
-  el.innerHTML = `<header class="sub-head"><a class="icon-btn" href="#/" aria-label="Vissza">${icon('back')}</a><h1>Könyvek böngészése</h1></header>
-    <p class="loading">Könyvlista betöltése…</p>`;
+export async function renderBrowse(el, initialType) {
+  const head = `<header class="sub-head"><a class="icon-btn" href="#/" aria-label="Vissza">${icon('back')}</a><h1>Böngészés</h1></header>`;
+  el.innerHTML = `${head}<p class="loading">Lista betöltése…</p>`;
   let cat;
   try { cat = await docs.fetchCatalog(); } catch (err) {
     el.querySelector('.loading').textContent = `${err.message} Ellenőrizd az internetkapcsolatot, és próbáld újra.`;
@@ -139,57 +156,124 @@ export async function renderBrowse(el) {
   }
   const have = new Set((await db.getAll('items')).map((i) => i.id));
   const progress = new Map((await db.getAll('progress')).map((p) => [p.id, p]));
-  const state = { lang: localStorage.getItem('jar.browseLang') || 'all', q: '', picked: new Set() };
+  const state = {
+    lang: localStorage.getItem('jar.browseLang') || 'all',
+    type: ['short', 'book', 'all'].includes(initialType) ? initialType : localStorage.getItem('jar.browseType') || 'all',
+    q: '', picked: new Set(), open: new Set(),
+  };
   const langs = [['hu', 'Magyar'], ['en', 'English'], ['all', 'Mind']];
+  const types = [['short', 'Rövid'], ['book', 'Könyvek'], ['all', 'Mind']];
+  const seg = (name, opts, cur) => `<div class="seg" role="radiogroup" data-seg="${name}">${opts.map(([k, l]) => `<button type="button" role="radio" data-v="${k}" aria-checked="${cur === k}">${l}</button>`).join('')}</div>`;
 
-  el.innerHTML = `<header class="sub-head"><a class="icon-btn" href="#/" aria-label="Vissza">${icon('back')}</a><h1>Könyvek böngészése</h1></header>
+  el.innerHTML = `${head}
     <div class="browse-tools">
-      <div class="seg" role="radiogroup" aria-label="Nyelv">${langs.map(([k, l]) => `<button type="button" role="radio" data-lang="${k}" aria-checked="${state.lang === k}">${l}</button>`).join('')}</div>
-      <label class="search">${icon('search')}<input type="search" placeholder="Cím vagy szerző" aria-label="Keresés"></label>
+      ${seg('type', types, state.type)}
+      ${seg('lang', langs, state.lang)}
+      <label class="search">${icon('search')}<input type="search" placeholder="Cím, szerző vagy gyűjtemény" aria-label="Keresés"></label>
     </div>
-    <ul class="browse-list"></ul>
+    <div class="browse-list"></div>
     <div class="browse-foot">
-      <button type="button" class="btn primary" data-act="download" disabled>${icon('download')}<span>Kijelöltek letöltése</span></button>
+      <button type="button" class="btn primary" data-act="download" disabled>${icon('download')}<span></span></button>
     </div>
-    <p class="browse-note">Új könyvet a katalógusba a GitHubon tudsz felvenni: a <a href="${REPO_URL}/actions/workflows/add-book.yml" target="_blank" rel="noopener">Könyv hozzáadása</a> oldalon bemásolod a MEK- vagy Gutenberg-linket. Bármilyen EPUB, TXT vagy PDF fájlt a könyvtárban a „Fájl megnyitása” gombbal is megnyithatsz.</p>`;
+    <p class="browse-note">Új könyvet vagy mesegyűjteményt a GitHubon tudsz felvenni: a <a href="${REPO_URL}/actions/workflows/add-book.yml" target="_blank" rel="noopener">Könyv hozzáadása</a> oldalon bemásolod a MEK- vagy Gutenberg-linket. Bármilyen EPUB, TXT vagy PDF fájlt a könyvtárban a „Fájl megnyitása” gombbal is megnyithatsz.</p>`;
 
   const listEl = $('.browse-list', el);
   const dlBtn = $('[data-act="download"]', el);
+  const langRank = (l) => (l === 'hu' ? 0 : l === 'en' ? 1 : 2);
+  const wpm = () => settings().wpm;
+
+  const itemRow = (b) => {
+    const installed = have.has(b.id);
+    const p = progress.get(b.id);
+    const meta = b.short
+      ? `kb. ${readingTime(b.words, wpm())}, ${formatNumber(b.words)} szó`
+      : `${Math.round(b.words / 1000)} ezer szó, kb. ${readingTime(b.words, wpm())}`;
+    const right = installed ? 'Letöltve' : b.short ? '' : `${(b.bytes / 1048576).toFixed(1).replace('.', ',')} MB`;
+    return `<li class="brow ${installed ? 'installed' : ''}" data-id="${esc(b.id)}">
+      <label>
+        ${installed ? `<span class="brow-check done">${icon('check')}</span>` : `<input type="checkbox" ${state.picked.has(b.id) ? 'checked' : ''}><span class="brow-check" aria-hidden="true">${icon('check')}</span>`}
+        <span class="brow-text"><span class="row-title">${esc(b.title)}</span>${b.short ? '' : `<span class="row-sub">${esc(b.author)}</span>`}<span class="brow-meta">${meta}</span></span>
+        <span class="brow-size">${right}${p?.index ? `<br>${fmtPct(p.index, p.total)}` : ''}</span>
+      </label></li>`;
+  };
+
   const draw = () => {
     const q = state.q.toLowerCase();
-    const langRank = (l) => (l === 'hu' ? 0 : l === 'en' ? 1 : 2);
     const items = cat.books.filter((b) => (state.lang === 'all' || b.lang === state.lang)
-      && (!q || `${b.title} ${b.author}`.toLowerCase().includes(q)))
+      && (state.type === 'all' || (state.type === 'short') === !!b.short)
+      && (!q || `${b.title} ${b.author} ${b.collection || ''}`.toLowerCase().includes(q)));
+    const books = items.filter((b) => !b.short)
       .sort((a, b) => langRank(a.lang) - langRank(b.lang) || coll.compare(a.author, b.author) || coll.compare(a.title, b.title));
-    listEl.innerHTML = items.map((b) => {
-      const installed = have.has(b.id);
-      const p = progress.get(b.id);
-      const meta = `${Math.round(b.words / 1000)} ezer szó, kb. ${readingTime(b.words, settings().wpm)}`;
-      return `<li class="brow ${installed ? 'installed' : ''}" data-id="${esc(b.id)}">
-        <label>
-          ${installed ? `<span class="brow-check done">${icon('check')}</span>` : `<input type="checkbox" ${state.picked.has(b.id) ? 'checked' : ''}><span class="brow-check" aria-hidden="true">${icon('check')}</span>`}
-          <span class="brow-text"><span class="row-title">${esc(b.title)}</span><span class="row-sub">${esc(b.author)}</span><span class="brow-meta">${meta}</span></span>
-          <span class="brow-size">${installed ? 'Letöltve' : `${(b.bytes / 1048576).toFixed(1).replace('.', ',')} MB`}${p?.index ? `<br>${fmtPct(p.index, p.total)}` : ''}</span>
-        </label></li>`;
-    }).join('') || '<li class="empty">Nincs találat.</li>';
+    const groups = new Map();
+    for (const b of items.filter((x) => x.short)) {
+      const key = `${b.lang}|${b.author}|${b.collection}`;
+      if (!groups.has(key)) groups.set(key, { key, lang: b.lang, author: b.author, collection: b.collection, items: [] });
+      groups.get(key).items.push(b);
+    }
+    const groupList = [...groups.values()].sort((a, b) => langRank(a.lang) - langRank(b.lang) || coll.compare(a.author, b.author) || coll.compare(a.collection, b.collection));
+
+    const groupHtml = (g) => {
+      g.items.sort((a, b) => (a.n ?? 0) - (b.n ?? 0));
+      const mins = g.items.map((b) => Math.max(1, Math.round(b.words / wpm())));
+      const range = Math.min(...mins) === Math.max(...mins) ? `${mins[0]} perc` : `${Math.min(...mins)}–${Math.max(...mins)} perc`;
+      const free = g.items.filter((b) => !have.has(b.id));
+      const pickedHere = free.filter((b) => state.picked.has(b.id)).length;
+      const done = g.items.length - free.length;
+      const status = [pickedHere ? `${pickedHere} kijelölve` : '', done ? `${done} letöltve` : ''].filter(Boolean).join(', ');
+      const open = q || state.open.has(g.key);
+      return `<details class="bgroup" data-group="${esc(g.key)}" ${open ? 'open' : ''}>
+        <summary>
+          <span class="brow-text"><span class="row-title">${esc(g.collection)}</span><span class="row-sub">${esc(g.author)}</span>
+            <span class="brow-meta">${g.items.length} szöveg, egyenként ${range}${status ? `; ${status}` : ''}</span></span>
+          <span class="bgroup-chev" aria-hidden="true">${icon('back')}</span>
+        </summary>
+        ${free.length ? `<button type="button" class="btn small ghost bgroup-all" data-all="${esc(g.key)}">${pickedHere === free.length ? 'Kijelölés törlése' : 'Mindet kijelölöm'}</button>` : ''}
+        <ul class="bgroup-items">${g.items.map(itemRow).join('')}</ul>
+      </details>`;
+    };
+
+    const parts = [];
+    if (groupList.length) parts.push(`${state.type === 'all' ? '<h2 class="browse-h">Rövid szövegek</h2>' : ''}<div class="bgroups">${groupList.map(groupHtml).join('')}</div>`);
+    if (books.length) parts.push(`${state.type === 'all' ? '<h2 class="browse-h">Könyvek</h2>' : ''}<ul class="brows">${books.map(itemRow).join('')}</ul>`);
+    listEl.innerHTML = parts.join('') || '<p class="empty">Nincs találat.</p>';
+    listEl._groups = groups;
     dlBtn.disabled = !state.picked.size;
-    $('span', dlBtn).textContent = state.picked.size ? `Kijelöltek letöltése (${state.picked.size})` : 'Jelölj ki könyveket a letöltéshez';
+    $('span', dlBtn).textContent = state.picked.size ? `Kijelöltek letöltése (${state.picked.size})` : 'Jelöld ki, amit letöltenél';
   };
   draw();
 
-  el.querySelector('.seg').onclick = (e) => {
-    const b = e.target.closest('[data-lang]');
-    if (!b) return;
-    state.lang = b.dataset.lang;
-    localStorage.setItem('jar.browseLang', state.lang);
-    el.querySelectorAll('[data-lang]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+  el.querySelector('.browse-tools').onclick = (e) => {
+    const b = e.target.closest('[data-v]');
+    const segEl = b?.closest('[data-seg]');
+    if (!segEl) return;
+    const name = segEl.dataset.seg;
+    state[name] = b.dataset.v;
+    localStorage.setItem(name === 'lang' ? 'jar.browseLang' : 'jar.browseType', b.dataset.v);
+    segEl.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
     draw();
   };
   el.querySelector('input[type=search]').oninput = (e) => { state.q = e.target.value; draw(); };
+  listEl.addEventListener('toggle', (e) => {
+    const key = e.target.dataset?.group;
+    if (!key || state.q) return;
+    if (e.target.open) state.open.add(key); else state.open.delete(key);
+  }, true);
+  listEl.onclick = (e) => {
+    const allBtn = e.target.closest('[data-all]');
+    if (!allBtn) return;
+    const g = listEl._groups.get(allBtn.dataset.all);
+    const free = g.items.filter((b) => !have.has(b.id));
+    const allPicked = free.every((b) => state.picked.has(b.id));
+    for (const b of free) { if (allPicked) state.picked.delete(b.id); else state.picked.add(b.id); }
+    state.open.add(g.key);
+    draw();
+  };
   listEl.onchange = (e) => {
     const id = e.target.closest('[data-id]')?.dataset.id;
     if (!id) return;
     if (e.target.checked) state.picked.add(id); else state.picked.delete(id);
+    const groupKey = e.target.closest('[data-group]')?.dataset.group;
+    if (groupKey) state.open.add(groupKey);
     draw();
   };
   dlBtn.onclick = async () => {
@@ -200,7 +284,7 @@ export async function renderBrowse(el) {
       $('span', dlBtn).textContent = `Letöltés: ${k + 1} / ${picked.length}…`;
       try { await docs.downloadCatalogBook(b); have.add(b.id); state.picked.delete(b.id); ok++; } catch (err) { toast(err.message, { ms: 6000 }); }
     }
-    if (ok) toast(ok === 1 ? '1 könyv letöltve. A könyvtárban találod.' : `${ok} könyv letöltve. A könyvtárban találod.`, { action: 'Könyvtár', onAction: () => { location.hash = '#/'; } });
+    if (ok) toast(`${ok} letöltve. A könyvtárban találod.`, { action: 'Könyvtár', onAction: () => { location.hash = '#/'; } });
     draw();
   };
 }

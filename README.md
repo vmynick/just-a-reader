@@ -34,17 +34,25 @@ A legyintés iránya a beállításokban megfordítható.
 - Fájl megnyitása: EPUB, TXT, HTML, FB2, MEK-féle HTML ZIP, PDF. Androidon a *Megosztás → Just A Reader* is működik, ha az app telepítve van.
 - Statisztika, mentés fájlba és visszatöltés (minden adat csak a telefonon tárolódik).
 
-## Könyvek
+## Könyvek és rövid szövegek
 
-A katalógusban 48 közkincs könyv van: 27 magyar a [Magyar Elektronikus Könyvtárból](https://mek.oszk.hu), 21 angol a [Standard Ebooksból](https://standardebooks.org) és a [Project Gutenbergről](https://www.gutenberg.org). Közülük 6 az első indításkor magától letöltődik, a többit a *Könyvek böngészése* oldalon jelölheted ki.
+A katalógusban 48 közkincs könyv van: 27 magyar a [Magyar Elektronikus Könyvtárból](https://mek.oszk.hu), 21 angol a [Standard Ebooksból](https://standardebooks.org) és a [Project Gutenbergről](https://www.gutenberg.org).
 
-### Új könyv a katalógusba
+Emellett 302 rövid szöveg (pár perc alatt elolvasható), gyűjteményenként csoportosítva:
+
+- **Magyar (251):** Benedek Elek meséi, Móra Ferenc: Csicseri történet, Mikszáth Kálmán: Csodaszép mesék és A jó palócok, Karinthy Frigyes: Tanár úr kérem, Gárdonyi Géza: Az én falum, Petőfi Sándor 20 verse, Arany János 18 balladája és verse.
+- **English (51):** Oscar Wilde: Children’s Stories, Kipling: Just So Stories, O. Henry, Poe, Saki és Csehov novellái.
+
+Az első indításkor 6 könyv és 7 rövid szöveg magától letöltődik. A többit a *Böngészés* oldalon jelölheted ki (Rövid / Könyvek szűrő, gyűjteményenként „Mindet kijelölöm”).
+
+### Új könyv vagy gyűjtemény a katalógusba
 
 1. GitHub → **Actions** → **Könyv hozzáadása** → **Run workflow**.
 2. Bemásolod a linket, például `https://mek.oszk.hu/00600/00656/`, `https://standardebooks.org/ebooks/jane-austen/emma` vagy `https://www.gutenberg.org/ebooks/1342`.
-3. Kb. két perc múlva megjelenik a *Könyvek böngészése* oldalon.
+3. Mese-, vers- vagy novellagyűjteménynél pipáld be a **Rövid szövegekre bontás** mezőt. Ha csak néhány darab kell belőle, a címüket `|` jellel elválasztva írd be (pl. `A walesi bárdok|Családi kör`).
+4. Kb. két perc múlva megjelenik a *Böngészés* oldalon.
 
-Gépen ugyanez: `node tools/add-book.mjs <link>`. Több könyv egyszerre: `node tools/add-book.mjs --list tools/seed-books.txt`.
+Gépen ugyanez: `node tools/add-book.mjs <link> [--split] [--only "^(cím1|cím2)"] [--dry]`. A `--dry` csak kilistázza a részeket. Több forrás egyszerre: `node tools/add-book.mjs --list tools/seed-books.txt` vagy `tools/seed-short.txt`.
 
 ## Fejlesztés
 

@@ -119,8 +119,9 @@ export async function downloadCatalogBook(entry) {
   const b = await res.json();
   const now = Date.now();
   await db.saveDoc({
-    id: entry.id, kind: 'book', title: b.title, author: b.author, lang: b.lang, wordCount: entry.words,
+    id: entry.id, kind: 'book', title: entry.title || b.title, author: b.author, lang: b.lang, wordCount: entry.words,
     source: b.source, catalogId: entry.id, createdAt: now, updatedAt: now,
+    ...(entry.short ? { short: true, collection: entry.collection, n: entry.n ?? 0 } : {}),
   }, b.chapters);
 }
 

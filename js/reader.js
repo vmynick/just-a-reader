@@ -260,7 +260,7 @@ export class Reader {
     this.info.wpm.textContent = `${s.wpm} sz/p`;
     this.info.count.textContent = `${formatNumber(this.i + 1)} / ${formatNumber(n)}`;
     const ch = chapterAt(t.chapterStarts, this.i);
-    this.info.chapter.textContent = t.chapterTitles[ch] || this.doc.item.title;
+    this.info.chapter.textContent = (t.chapterStarts.length > 1 && t.chapterTitles[ch]) || this.doc.item.title;
     const left = formatDuration((n - this.i) * this.avgMs);
     this.info.left.textContent = left.startsWith('<') ? left : `~${left}`;
     this.info.bar.style.transform = `scaleX(${n > 1 ? this.i / (n - 1) : 1})`;

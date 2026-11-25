@@ -1,0 +1,21 @@
+# Rövid szövegek: mesék, versek, novellák – gyűjteményekből darabolva (--split).
+#   node tools/add-book.mjs --list tools/seed-short.txt
+# --only: csak a felsorolt címek; --pre: ezek az első indításkor letöltődnek.
+
+# --- Magyar ---
+https://mek.oszk.hu/01000/01006/ --split --title "Petőfi Sándor versei" --pre "^(Anyám tyúkja)" --only "^(Az alföld|Szeptember végén|Nemzeti dal|Füstbement terv|Egy gondolat bánt engemet|A Tisza|Az őrült|Anyám tyúkja|Itt van az ősz|Fa leszek|A puszta, télen|Szabadság, szerelem|Reszket a bokor|Arany Lacinak|Pató Pál úr|Szülőföldemen|Befordúltam a konyhára|Falu végén kurta kocsma|Minek nevezzelek|Föltámadott a tenger|Hazámban)"
+https://mek.oszk.hu/00500/00597/ --format html --split --title "Arany János balladái és versei" --only "^(Szondi két apródja|A walesi bárdok|Ágnes asszony|Tengeri-hántás|Tengeri - hántás|Vörös Rébék|Zách Klára|Szőke Panni|Rozgonyiné|A hamis tanú|Bor vitéz|Tetemre hívás|Híd-avatás|Mátyás anyja|Családi kör|A fülemile|A kép-mutogató|A tölgyek alatt|Epilogus)"
+https://mek.oszk.hu/00200/00232/ --split --pre "^(Az ember a legerősebb)"   # Benedek Elek – Többsincs királyfi és más mesék
+https://mek.oszk.hu/00900/00963/ --split --pre "^(Dióbél királykisasszony)"   # Móra Ferenc – Csicseri történet
+https://mek.oszk.hu/22200/22275/ --split                                       # Mikszáth Kálmán – Csodaszép mesék
+https://mek.oszk.hu/00900/00950/ --split --pre "^(A néhai bárány)"              # Mikszáth Kálmán – A jó palócok
+https://mek.oszk.hu/00700/00719/ --split                                       # Karinthy Frigyes – Tanár úr kérem
+https://mek.oszk.hu/00600/00657/ --split --max-words 3000                      # Gárdonyi Géza – Az én falum
+
+# --- English ---
+https://standardebooks.org/ebooks/oscar-wilde/childrens-stories --split --pre "^(The Selfish Giant)"
+https://standardebooks.org/ebooks/rudyard-kipling/just-so-stories --split --pre "^(How the Whale Got His Throat)"
+https://standardebooks.org/ebooks/o-henry/short-fiction --split --pre "^(The Gift of the Magi)" --only "^(The Gift of the Magi|The Ransom of Red Chief|The Last Leaf|After Twenty Years|The Cop and the Anthem|A Retrieved Reformation|Hearts and Hands|The Skylight Room|Witches’ Loaves|The Furnished Room)"
+https://standardebooks.org/ebooks/edgar-allan-poe/short-fiction --split --only "^(The Tell-Tale Heart|The Cask of Amontillado|The Black Cat|The Masque of the Red Death|The Oval Portrait|The Pit and the Pendulum)"
+https://standardebooks.org/ebooks/saki/short-fiction --split --only "^(The Open Window|Sredni Vashtar|Tobermory|The Interlopers|The Storyteller|The Lumber Room|The Schartz-Metterklume Method)"
+https://standardebooks.org/ebooks/anton-chekhov/short-fiction/constance-garnett --split --only "^(The Bet|Vanka|The Lady with the Dog|A Joke|The Student|Gooseberries|The Chameleon|The Death of a Government Clerk|Oysters|Misery)"

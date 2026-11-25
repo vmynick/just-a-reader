@@ -18,6 +18,13 @@ on:
       author:
         description: 'Szerző (nem kötelező)'
         required: false
+      split:
+        description: 'Rövid szövegekre bontás (mese-, vers- vagy novellagyűjteményhez)'
+        type: boolean
+        default: false
+      only:
+        description: 'Bontásnál csak ezek a címek, | jellel elválasztva (pl. A walesi bárdok|Családi kör)'
+        required: false
 
 permissions:
   contents: write
@@ -37,11 +44,15 @@ jobs:
           BOOK_LANG: ${{ inputs.lang }}
           TITLE: ${{ inputs.title }}
           AUTHOR: ${{ inputs.author }}
+          SPLIT: ${{ inputs.split }}
+          ONLY: ${{ inputs.only }}
         run: |
           args=("$SOURCE")
           if [ "$BOOK_LANG" != "auto" ]; then args+=(--lang "$BOOK_LANG"); fi
           if [ -n "$TITLE" ]; then args+=(--title "$TITLE"); fi
           if [ -n "$AUTHOR" ]; then args+=(--author "$AUTHOR"); fi
+          if [ "$SPLIT" = "true" ]; then args+=(--split); fi
+          if [ -n "$ONLY" ]; then args+=(--only "^(${ONLY})"); fi
           node tools/add-book.mjs "${args[@]}" | tee result.txt
           echo "### $(head -1 result.txt)" >> "$GITHUB_STEP_SUMMARY"
       - run: npm test

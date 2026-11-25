@@ -36,7 +36,7 @@ A legyintés iránya a beállításokban megfordítható.
 
 ## Könyvek
 
-A katalógusban 47 közkincs könyv van: 27 magyar a [Magyar Elektronikus Könyvtárból](https://mek.oszk.hu), 20 angol a [Standard Ebooksból](https://standardebooks.org). Közülük 6 az első indításkor magától letöltődik, a többit a *Könyvek böngészése* oldalon jelölheted ki.
+A katalógusban 48 közkincs könyv van: 27 magyar a [Magyar Elektronikus Könyvtárból](https://mek.oszk.hu), 21 angol a [Standard Ebooksból](https://standardebooks.org) és a [Project Gutenbergről](https://www.gutenberg.org). Közülük 6 az első indításkor magától letöltődik, a többit a *Könyvek böngészése* oldalon jelölheted ki.
 
 ### Új könyv a katalógusba
 

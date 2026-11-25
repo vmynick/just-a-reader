@@ -38,12 +38,18 @@ A legyintés iránya a beállításokban megfordítható.
 
 A katalógusban 48 közkincs könyv van: 27 magyar a [Magyar Elektronikus Könyvtárból](https://mek.oszk.hu), 21 angol a [Standard Ebooksból](https://standardebooks.org) és a [Project Gutenbergről](https://www.gutenberg.org).
 
-Emellett 302 rövid szöveg (pár perc alatt elolvasható), gyűjteményenként csoportosítva:
+Emellett 627 rövid szöveg (pár perc vagy pár másodperc alatt elolvasható), gyűjteményenként csoportosítva:
 
-- **Magyar (251):** Benedek Elek meséi, Móra Ferenc: Csicseri történet, Mikszáth Kálmán: Csodaszép mesék és A jó palócok, Karinthy Frigyes: Tanár úr kérem, Gárdonyi Géza: Az én falum, Petőfi Sándor 20 verse, Arany János 18 balladája és verse.
-- **English (51):** Oscar Wilde: Children’s Stories, Kipling: Just So Stories, O. Henry, Poe, Saki és Csehov novellái.
+| | Magyar | English |
+|---|---|---|
+| **Mesék** (153) | Benedek Elek, Móra Ferenc: Csicseri történet, Mikszáth: Csodaszép mesék | Wilde: Children’s Stories, Kipling: Just So Stories |
+| **Novellák** (111) | Mikszáth: A jó palócok, Karinthy: Tanár úr kérem, Gárdonyi: Az én falum | O. Henry, Poe, Saki, Csehov |
+| **Versek** (208) | Petőfi, Arany, Ady, Vörösmarty, Kölcsey (Himnusz), Csokonai, Tóth Árpád, Juhász Gyula, Babits | Shakespeare szonettjei, Poe, Keats, Blake, Dickinson, Stevenson: A Child’s Garden of Verses |
+| **Dalok** (155) | 120 magyar népdal (Endrődi Sándor és Erdélyi János gyűjtéséből) | Burns dalai (Auld Lang Syne…), 28 régi angol karácsonyi ének |
 
-Az első indításkor 6 könyv és 7 rövid szöveg magától letöltődik. A többit a *Böngészés* oldalon jelölheted ki (Rövid / Könyvek szűrő, gyűjteményenként „Mindet kijelölöm”).
+Mai, szerzői jog alatt álló dalszövegeket nem lehet nyilvános katalógusba tenni, de bármelyiket bemásolhatod az *Új szöveg* gombbal: az csak a te telefonodon marad.
+
+Az első indításkor 6 könyv és 9 rövid szöveg magától letöltődik. A többit a *Böngészés* oldalon jelölheted ki (Rövid / Könyvek szűrő, azon belül Mesék / Novellák / Versek / Dalok; gyűjteményenként „Mindet kijelölöm”).
 
 ### Új könyv vagy gyűjtemény a katalógusba
 
@@ -52,7 +58,7 @@ Az első indításkor 6 könyv és 7 rövid szöveg magától letöltődik. A t�
 3. Mese-, vers- vagy novellagyűjteménynél pipáld be a **Rövid szövegekre bontás** mezőt. Ha csak néhány darab kell belőle, a címüket `|` jellel elválasztva írd be (pl. `A walesi bárdok|Családi kör`).
 4. Kb. két perc múlva megjelenik a *Böngészés* oldalon.
 
-Gépen ugyanez: `node tools/add-book.mjs <link> [--split] [--only "^(cím1|cím2)"] [--dry]`. A `--dry` csak kilistázza a részeket. Több forrás egyszerre: `node tools/add-book.mjs --list tools/seed-books.txt` vagy `tools/seed-short.txt`.
+Gépen ugyanez: `node tools/add-book.mjs <link> [--split] [--genre mese|novella|vers|dal] [--only "^(cím1|cím2)"] [--dry]`. A `--dry` csak kilistázza a részeket; számozott daraboknál (népdalok, szonettek) `--by-number`, nagy gyűjteményből mintának `--sample 50`, MEK versesköteteknél `--format html`. Törlés a katalógusból: `--remove <azonosító>`. Több forrás egyszerre: `node tools/add-book.mjs --list tools/seed-books.txt` vagy `tools/seed-short.txt`.
 
 ## Fejlesztés
 

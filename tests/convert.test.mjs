@@ -76,6 +76,22 @@ test('EPUB 3 (Standard Ebooks style): nav TOC and epub:type skipping', async () 
   assert.equal(book.chapters[0].text, 'I\nAlice was beginning to get very tired.');
 });
 
+test('EPUB with many poems in one file is split at the poem headings', async () => {
+  const poem = (t, lines) => `<article epub:type="z3998:poem"><h2 epub:type="title">${t}<a href="endnotes.xhtml#n1" epub:type="noteref">1</a></h2><p>${lines.map((l) => `<span>${l}</span>`).join('<br/>')}</p></article>`;
+  const z = makeZip({
+    mimetype: 'application/epub+zip',
+    'META-INF/container.xml': '<container><rootfiles><rootfile full-path="epub/content.opf"/></rootfiles></container>',
+    'epub/content.opf': `<package version="3.0"><metadata><dc:title>Poetry</dc:title><dc:creator>Edgar Allan Poe</dc:creator><dc:language>en-US</dc:language></metadata>
+      <manifest><item id="toc" href="toc.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="p" href="text/poetry.xhtml" media-type="application/xhtml+xml"/></manifest>
+      <spine><itemref idref="p"/></spine></package>`,
+    'epub/toc.xhtml': xhtml('<body><nav epub:type="toc"><ol><li><a href="text/poetry.xhtml">Poetry</a></li></ol></nav></body>'),
+    'epub/text/poetry.xhtml': xhtml(`<body><section epub:type="z3998:poems">${poem('Alone', ['From childhood’s hour I have not been', 'As others were'])}${poem('The Raven', ['Once upon a midnight dreary', 'while I pondered, weak and weary'])}${poem('Eldorado', ['Gaily bedight,', 'A gallant knight'])}</section></body>`),
+  });
+  const book = await fileToBook('poe.epub', z);
+  assert.deepEqual(book.chapters.map((c) => c.title), ['Alone', 'The Raven', 'Eldorado']);
+  assert.equal(book.chapters[1].text, 'The Raven\nOnce upon a midnight dreary\nwhile I pondered, weak and weary');
+});
+
 test('MEK HTML zip: index order, ISO-8859-2, heuristic chapter headings', async () => {
   const latin2 = (s) => Uint8Array.from([...s].map((ch) => ({ ő: 0xf5, ű: 0xfb, á: 0xe1, é: 0xe9, Ő: 0xd5 }[ch] ?? ch.charCodeAt(0))));
   const head = '<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; CHARSET=iso-8859-2"><TITLE>Mikszáth Kálmán: A Noszty fiú esete</TITLE></HEAD><BODY>';

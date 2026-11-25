@@ -9,6 +9,8 @@ import { $, esc, toast, ask, sheet, fmtPct, readingTime, downloadBlob } from './
 import { icon } from './icons.js';
 
 export const REPO_URL = 'https://github.com/vmynick/just-a-reader';
+// Short-text genres: [key, noun after a number, filter label]
+const GENRES = [['mese', 'mese', 'Mesék'], ['novella', 'novella', 'Novellák'], ['vers', 'vers', 'Versek'], ['dal', 'dal', 'Dalok']];
 const coll = new Intl.Collator('hu');
 
 function focusWord(word) {
@@ -156,19 +158,23 @@ export async function renderBrowse(el, initialType) {
   }
   const have = new Set((await db.getAll('items')).map((i) => i.id));
   const progress = new Map((await db.getAll('progress')).map((p) => [p.id, p]));
+  const genreKeys = GENRES.map(([k]) => k);
   const state = {
     lang: localStorage.getItem('jar.browseLang') || 'all',
-    type: ['short', 'book', 'all'].includes(initialType) ? initialType : localStorage.getItem('jar.browseType') || 'all',
+    type: ['short', 'book', 'all'].includes(initialType) || genreKeys.includes(initialType) ? (genreKeys.includes(initialType) ? 'short' : initialType) : localStorage.getItem('jar.browseType') || 'all',
+    genre: genreKeys.includes(initialType) ? initialType : 'all',
     q: '', picked: new Set(), open: new Set(),
   };
   const langs = [['hu', 'Magyar'], ['en', 'English'], ['all', 'Mind']];
   const types = [['short', 'Rövid'], ['book', 'Könyvek'], ['all', 'Mind']];
+  const genres = [['all', 'Mind'], ...GENRES.map(([k, , plural]) => [k, plural])];
   const seg = (name, opts, cur) => `<div class="seg" role="radiogroup" data-seg="${name}">${opts.map(([k, l]) => `<button type="button" role="radio" data-v="${k}" aria-checked="${cur === k}">${l}</button>`).join('')}</div>`;
 
   el.innerHTML = `${head}
     <div class="browse-tools">
       ${seg('type', types, state.type)}
       ${seg('lang', langs, state.lang)}
+      <div class="genre-row" ${state.type === 'book' ? 'hidden' : ''}>${seg('genre', genres, state.genre)}</div>
       <label class="search">${icon('search')}<input type="search" placeholder="Cím, szerző vagy gyűjtemény" aria-label="Keresés"></label>
     </div>
     <div class="browse-list"></div>
@@ -186,7 +192,7 @@ export async function renderBrowse(el, initialType) {
     const installed = have.has(b.id);
     const p = progress.get(b.id);
     const meta = b.short
-      ? `kb. ${readingTime(b.words, wpm())}, ${formatNumber(b.words)} szó`
+      ? `${b.words < wpm() * 0.75 ? '1 percnél rövidebb' : `kb. ${readingTime(b.words, wpm())}`}, ${formatNumber(b.words)} szó`
       : `${Math.round(b.words / 1000)} ezer szó, kb. ${readingTime(b.words, wpm())}`;
     const right = installed ? 'Letöltve' : b.short ? '' : `${(b.bytes / 1048576).toFixed(1).replace('.', ',')} MB`;
     return `<li class="brow ${installed ? 'installed' : ''}" data-id="${esc(b.id)}">
@@ -201,13 +207,14 @@ export async function renderBrowse(el, initialType) {
     const q = state.q.toLowerCase();
     const items = cat.books.filter((b) => (state.lang === 'all' || b.lang === state.lang)
       && (state.type === 'all' || (state.type === 'short') === !!b.short)
+      && (!b.short || state.genre === 'all' || b.genre === state.genre)
       && (!q || `${b.title} ${b.author} ${b.collection || ''}`.toLowerCase().includes(q)));
     const books = items.filter((b) => !b.short)
       .sort((a, b) => langRank(a.lang) - langRank(b.lang) || coll.compare(a.author, b.author) || coll.compare(a.title, b.title));
     const groups = new Map();
     for (const b of items.filter((x) => x.short)) {
       const key = `${b.lang}|${b.author}|${b.collection}`;
-      if (!groups.has(key)) groups.set(key, { key, lang: b.lang, author: b.author, collection: b.collection, items: [] });
+      if (!groups.has(key)) groups.set(key, { key, lang: b.lang, author: b.author, collection: b.collection, genre: b.genre, items: [] });
       groups.get(key).items.push(b);
     }
     const groupList = [...groups.values()].sort((a, b) => langRank(a.lang) - langRank(b.lang) || coll.compare(a.author, b.author) || coll.compare(a.collection, b.collection));
@@ -224,7 +231,7 @@ export async function renderBrowse(el, initialType) {
       return `<details class="bgroup" data-group="${esc(g.key)}" ${open ? 'open' : ''}>
         <summary>
           <span class="brow-text"><span class="row-title">${esc(g.collection)}</span><span class="row-sub">${esc(g.author)}</span>
-            <span class="brow-meta">${g.items.length} szöveg, egyenként ${range}${status ? `; ${status}` : ''}</span></span>
+            <span class="brow-meta">${g.items.length} ${GENRES.find(([k]) => k === g.genre)?.[1] || 'szöveg'}, egyenként ${range}${status ? `; ${status}` : ''}</span></span>
           <span class="bgroup-chev" aria-hidden="true">${icon('back')}</span>
         </summary>
         ${free.length ? `<button type="button" class="btn small ghost bgroup-all" data-all="${esc(g.key)}">${pickedHere === free.length ? 'Kijelölés törlése' : 'Mindet kijelölöm'}</button>` : ''}
@@ -248,7 +255,11 @@ export async function renderBrowse(el, initialType) {
     if (!segEl) return;
     const name = segEl.dataset.seg;
     state[name] = b.dataset.v;
-    localStorage.setItem(name === 'lang' ? 'jar.browseLang' : 'jar.browseType', b.dataset.v);
+    if (name === 'lang') localStorage.setItem('jar.browseLang', b.dataset.v);
+    if (name === 'type') {
+      localStorage.setItem('jar.browseType', b.dataset.v);
+      $('.genre-row', el).hidden = b.dataset.v === 'book';
+    }
     segEl.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
     draw();
   };

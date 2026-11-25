@@ -25,6 +25,11 @@ on:
       only:
         description: 'Bontásnál csak ezek a címek, | jellel elválasztva (pl. A walesi bárdok|Családi kör)'
         required: false
+      genre:
+        description: 'Bontásnál a szövegek fajtája (a Böngészés szűrőjéhez)'
+        type: choice
+        options: [mese, novella, vers, dal]
+        default: novella
 
 permissions:
   contents: write
@@ -46,12 +51,13 @@ jobs:
           AUTHOR: ${{ inputs.author }}
           SPLIT: ${{ inputs.split }}
           ONLY: ${{ inputs.only }}
+          GENRE: ${{ inputs.genre }}
         run: |
           args=("$SOURCE")
           if [ "$BOOK_LANG" != "auto" ]; then args+=(--lang "$BOOK_LANG"); fi
           if [ -n "$TITLE" ]; then args+=(--title "$TITLE"); fi
           if [ -n "$AUTHOR" ]; then args+=(--author "$AUTHOR"); fi
-          if [ "$SPLIT" = "true" ]; then args+=(--split); fi
+          if [ "$SPLIT" = "true" ]; then args+=(--split --genre "$GENRE"); fi
           if [ -n "$ONLY" ]; then args+=(--only "^(${ONLY})"); fi
           node tools/add-book.mjs "${args[@]}" | tee result.txt
           echo "### $(head -1 result.txt)" >> "$GITHUB_STEP_SUMMARY"

@@ -1,6 +1,6 @@
 // EPUB 2/3 → { title, author, lang, chapters: [{ title, text }] }
 import { readZip } from './zip.js';
-import { htmlToBlocks, decodeEntities, shortTitle } from './html2text.js';
+import { htmlToBlocks, blocksToChapters, decodeEntities, shortTitle } from './html2text.js';
 import { markHeadings } from './headings.js';
 
 // Front/back matter we do not want to flash word by word.
@@ -124,7 +124,18 @@ export async function epubToBook(bytes) {
     if (SKIP_TYPE_RE.test(bodyOpen)) continue;
     const tocTitle = tocByPath.get(it.path);
     if (tocTitle && SKIP_TITLE_RE.test(tocTitle.trim())) continue;
-    const blocks = markHeadings(htmlToBlocks(html));
+    const raw = htmlToBlocks(html);
+    // One file holding many pieces (a poetry collection, several chapters): split at its top headings.
+    const levels = {};
+    for (const b of raw) if (b.h) levels[b.h] = (levels[b.h] || 0) + 1;
+    const top = Math.min(...Object.keys(levels).map(Number));
+    if (levels[top] >= 3) {
+      for (const part of blocksToChapters(raw, tocTitle || title, top)) {
+        if (!SKIP_TITLE_RE.test(part.title)) chapters.push(part);
+      }
+      continue;
+    }
+    const blocks = markHeadings(raw);
     if (!blocks.length) continue;
     const words = blocks.reduce((n, b) => n + b.text.split(' ').length, 0);
     const firstHeading = blocks.find((b) => b.h)?.text;

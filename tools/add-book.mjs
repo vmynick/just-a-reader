@@ -146,8 +146,35 @@ export function onlyNames(only) {
   return m ? m[1].split('|').map((s) => s.trim()).filter((s) => s && !/[\\[\]*+?{}.]/.test(s)) : [];
 }
 
+// "26.", "6. Lowlands away.", or a bare "XVIII" on its own line (sonnets).
+const NUMBERED = /^(?:(?:\d{1,4}|[IVXLC]{1,6})\.(?:\s+(.{1,80}))?|[IVXLC]{1,7}|\d{1,4})$/;
+
+/**
+ * Song books number every piece ("26." or "6. Lowlands away.") inside large files.
+ * Re-cut the text at those lines; untitled pieces are named after their first line.
+ */
+export function splitByNumber(chapters) {
+  const pieces = [];
+  let cur = null;
+  for (const ch of chapters) {
+    for (const line of ch.text.split('\n')) {
+      const m = line.trim().match(NUMBERED);
+      if (m) {
+        cur = { label: (m[1] || '').replace(/[.:]$/, ''), lines: [] };
+        pieces.push(cur);
+      } else if (cur) cur.lines.push(line);
+    }
+  }
+  return pieces.filter((p) => p.lines.length).map((p) => {
+    const first = p.lines[0].replace(/[,.;:!?–-]+$/, '').trim();
+    const name = p.label || (first.length > 48 ? `${first.slice(0, 46).replace(/\s\S*$/, '')}…` : first);
+    return { title: name, text: (p.label ? [p.label, ...p.lines] : p.lines).join('\n') };
+  });
+}
+
 /** Split a collection (tales, poems, short stories) into separate short catalog entries. */
 async function addSplit({ r, book, id, lang, title, author, opts }) {
+  if (opts['by-number']) book = { ...book, chapters: splitByNumber(book.chapters) };
   const min = Number(opts['min-words'] || 40);
   const max = Number(opts['max-words'] || 8000);
   const only = opts.only ? new RegExp(opts.only, 'iu') : null;
@@ -166,6 +193,11 @@ async function addSplit({ r, book, id, lang, title, author, opts }) {
     });
   }
   if (opts.limit) picked = picked.slice(0, Number(opts.limit));
+  if (opts.sample && picked.length > Number(opts.sample)) {
+    // Evenly spread picks across the whole collection (all themes of a song book).
+    const k = Number(opts.sample);
+    picked = Array.from({ length: k }, (_, i) => picked[Math.floor((i * picked.length) / k)]);
+  }
   if (opts.dry) {
     for (const c of all) console.log(`${picked.includes(c) ? '✓' : ' '} ${String(c.n + 1).padStart(3)}. ${c.short}  (${c.words} szó)`);
     return { id, author, title: `${title} – próba, ${picked.length} kiválasztva`, words: 0, chapters: picked.length, bytes: 0 };
@@ -184,6 +216,7 @@ async function addSplit({ r, book, id, lang, title, author, opts }) {
     await writeFile(join(ROOT, rel), JSON.stringify({ v: 1, id: sid, title: c.short, author, lang, source: r.source, collection: title, chapters: [{ title: c.title, text: c.text }] }));
     const bytes = (await stat(join(ROOT, rel))).size;
     const entry = { id: sid, title: c.short, author, lang, words: c.words, chapters: 1, bytes, file: rel, source: r.source, short: true, collection: title, split: id, n: c.n };
+    if (opts.genre) entry.genre = opts.genre; // mese | novella | vers | dal
     if (pre && (pre.test(c.title) || pre.test(c.short))) entry.preinstalled = true;
     cat.books.push(entry);
     totalBytes += bytes;
@@ -218,7 +251,7 @@ export async function addBook(src, opts = {}) {
   return entry;
 }
 
-const BOOLEAN_FLAGS = new Set(['preinstalled', 'split', 'dry']);
+const BOOLEAN_FLAGS = new Set(['preinstalled', 'split', 'dry', 'by-number']);
 
 function parseArgs(argv) {
   const opts = {};
@@ -233,8 +266,22 @@ function parseArgs(argv) {
   return { opts, pos };
 }
 
+/** Remove a book, or every short text split from a source id, from the catalog. */
+export async function removeFromCatalog(id) {
+  const cat = await loadCatalog();
+  const gone = cat.books.filter((b) => b.id === id || b.split === id);
+  for (const b of gone) await rm(join(ROOT, b.file), { force: true });
+  cat.books = cat.books.filter((b) => !gone.includes(b));
+  await saveCatalog(cat);
+  return gone.length;
+}
+
 async function main() {
   const { opts, pos } = parseArgs(process.argv.slice(2));
+  if (opts.remove) {
+    console.log(`Törölve: ${await removeFromCatalog(opts.remove)} tétel (${opts.remove}).`);
+    return;
+  }
   const jobs = [];
   if (opts.list) {
     for (const line of (await readFile(opts.list, 'utf8')).split(/\r?\n/)) {

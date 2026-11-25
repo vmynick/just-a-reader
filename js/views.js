@@ -389,6 +389,16 @@ export async function renderSettings(el) {
     const est = await navigator.storage?.estimate?.();
     if (est?.usage) $('.storage', el).textContent = `Tárhely: ${(est.usage / 1048576).toFixed(1).replace('.', ',')} MB használatban.`;
   } catch { /* optional */ }
+  // Chrome may offer installation only after the page has rendered.
+  const syncInstall = () => {
+    const btn = $('.settings [data-act="install"]', el);
+    const manual = $('.install-manual', el);
+    if (btn) btn.hidden = !canInstall();
+    if (manual) manual.hidden = canInstall();
+  };
+  el._offInstall?.();
+  el._offInstall = onInstallChange(syncInstall);
+  syncInstall();
   const back = $('[data-act="back"]', el);
   back.onclick = (e) => { if (history.length > 1) { e.preventDefault(); history.back(); } };
   el.onclick = async (e) => {

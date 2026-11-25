@@ -4,6 +4,7 @@ import { readZip, decodeText } from './zip.js';
 import { epubToBook, resolvePath } from './epub.js';
 import { htmlToBlocks, blocksToChapters, decodeEntities, shortTitle } from './html2text.js';
 import { markHeadings } from './headings.js';
+import { fail } from './errors.js';
 
 export const SUPPORTED_EXT = ['epub', 'txt', 'md', 'html', 'htm', 'xhtml', 'fb2', 'zip', 'pdf'];
 
@@ -45,7 +46,7 @@ async function convertAny(name, bytes) {
   if (ext === 'fb2' || /<FictionBook\b/.test(text.slice(0, 2000))) return fb2ToBook(text, name);
   if (['html', 'htm', 'xhtml'].includes(ext) || /^\s*(<!doctype html|<html\b|<\?xml)/i.test(text.slice(0, 500))) return htmlToBook(text, name);
   if (['txt', 'md', ''].includes(ext) || !/[\u0000-\u0008]/.test(text.slice(0, 1000))) return textToBook(text, baseName(name));
-  throw new Error(`Nem támogatott fájltípus: .${ext}`);
+  throw fail('Nem támogatott fájltípus: .{ext}', { ext });
 }
 
 function metaFromHtml(html) {
@@ -69,7 +70,7 @@ export function htmlToBook(html, name = '') {
 /** MEK-style zipped HTML: index.htm (table of contents) + chapter files. */
 export async function htmlZipToBook(zip, name = '') {
   const htmls = zip.names.filter((n) => /\.x?html?$/i.test(n) && !/(^|\/)mek\.html$/i.test(n));
-  if (!htmls.length) throw new Error('A ZIP-ben nincs olvasható HTML vagy EPUB.');
+  if (!htmls.length) throw fail('A ZIP-ben nincs olvasható HTML vagy EPUB.');
   return htmlFilesToBook(htmls, (n) => zip.text(n), name);
 }
 
@@ -201,7 +202,7 @@ async function htmlFilesToBook(files, text, name) {
     const byHeadings = blocksToChapters(blocks, title);
     if (byHeadings.length >= chapters.length) chapters = byHeadings;
   }
-  if (!chapters.length) throw new Error('A fájlban nem találtam olvasható szöveget.');
+  if (!chapters.length) throw fail('A fájlban nem találtam olvasható szöveget.');
   return { ...meta, title, chapters };
 }
 

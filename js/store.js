@@ -33,7 +33,7 @@ async function run(storeNames, mode, fn) {
     else result = out;
     tx.oncomplete = () => resolve(result);
     tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error || new Error('A mentés megszakadt.'));
+    tx.onabort = () => reject(tx.error || Object.assign(new Error('A mentés megszakadt.'), { key: 'A mentés megszakadt.' }));
   });
 }
 

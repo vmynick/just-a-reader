@@ -43,6 +43,7 @@ export const DEFAULTS = {
   swipeBack: 'left', // finger moves left = go back
   haptics: true,
   tvMode: false,
+  lang: 'auto',
   firstRunDone: false,
   helpSeen: false,
 };

@@ -1,5 +1,6 @@
 // DOM helpers: escaping, toast, confirm dialog, action sheet.
 import { icon } from './icons.js';
+import { t } from './i18n.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -21,7 +22,7 @@ export function toast(msg, { action, onAction, ms = 3200 } = {}) {
 }
 
 /** Modal confirm. Resolves true/false. */
-export function ask(message, { ok = 'Rendben', cancel = 'Mégse', danger = false } = {}) {
+export function ask(message, { ok = t('Rendben'), cancel = t('Mégse'), danger = false } = {}) {
   return new Promise((resolve) => {
     const wrap = document.createElement('div');
     wrap.className = 'modal-wrap';
@@ -63,12 +64,6 @@ export function fmtPct(index, total) {
   return `${Math.floor((index / total) * 100)}%`;
 }
 
-export function readingTime(words, wpm) {
-  const m = Math.round(words / wpm);
-  if (m < 60) return `${Math.max(1, m)} perc`;
-  const h = Math.floor(m / 60);
-  return `${h} óra ${m % 60 ? `${m % 60} perc` : ''}`.trim();
-}
 
 export function vibrate(ms) {
   try { navigator.vibrate?.(ms); } catch { /* not supported */ }

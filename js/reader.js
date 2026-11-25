@@ -3,8 +3,9 @@ import {
   tokenize, prevSentenceStart, nextSentenceStart, sentenceStart, sentenceEnd, paragraphRange, chapterAt,
 } from './core/tokenize.js';
 import {
-  orpIndex, chunkAt, prevChunkStart, delayFor, rampFactor, averageMsPerWord, formatDuration, formatNumber,
+  orpIndex, chunkAt, prevChunkStart, delayFor, rampFactor, averageMsPerWord,
 } from './core/timing.js';
+import { t as tr, num, shortDuration } from './i18n.js';
 import * as db from './store.js';
 import { settings, update, onChange, clamp, wordPx, WPM_MIN, WPM_MAX } from './settings.js';
 import { renderControls } from './controls.js';
@@ -55,9 +56,9 @@ export class Reader {
   async open(id) {
     this.close(false);
     const [item, content, prog] = await Promise.all([db.get('items', id), db.get('content', id), db.get('progress', id)]);
-    if (!item || !content) { toast('Ez a szöveg már nincs meg a telefonon.'); this.onExit(); return; }
+    if (!item || !content) { toast(tr('Ez a szöveg már nincs meg a telefonon.')); this.onExit(); return; }
     const t = tokenize(content.chapters);
-    if (!t.words.length) { toast('Ebben a szövegben nincs mit olvasni.'); this.onExit(); return; }
+    if (!t.words.length) { toast(tr('Ebben a szövegben nincs mit olvasni.')); this.onExit(); return; }
     this.doc = { item, t, n: t.words.length };
     this.i = clamp(prog?.index ?? 0, 0, t.words.length - 1);
     this.loop = !!prog?.loop;
@@ -138,7 +139,7 @@ export class Reader {
     if (this.i + n >= this.doc.n) {
       if (this.loop) {
         this.i = 0;
-        this.flash('Újra az elejéről');
+        this.flash(tr('Újra az elejéről'));
         this.rampK = 0;
         this.nextAt = performance.now() + 1200;
         this.saveProgress(true);
@@ -163,7 +164,7 @@ export class Reader {
     this.trainAcc = 0;
     if (s.wpm >= s.trainMax) return;
     update({ wpm: Math.min(s.trainMax, s.wpm + s.trainStep) });
-    this.flash(`${settings().wpm} szó/perc`);
+    this.flash(tr('{n} szó/perc', { n: settings().wpm }));
   }
 
   /** Jump while keeping the play state; a short beat lets the eye catch up. */
@@ -192,15 +193,15 @@ export class Reader {
   sentence(dir) {
     const { flags } = this.doc.t;
     if (settings().haptics) vibrate(10);
-    if (dir < 0) this.jumpTo(prevSentenceStart(flags, this.i), '◂ előző mondat');
-    else this.jumpTo(nextSentenceStart(flags, this.i), 'következő mondat ▸');
+    if (dir < 0) this.jumpTo(prevSentenceStart(flags, this.i), tr('◂ előző mondat'));
+    else this.jumpTo(nextSentenceStart(flags, this.i), tr('következő mondat ▸'));
   }
 
   changeSpeed(steps) {
     const wpm = clamp(settings().wpm + steps * SPEED_STEP, WPM_MIN, WPM_MAX);
     if (wpm === settings().wpm) return;
     update({ wpm });
-    this.flash(`${wpm} szó/perc`, true);
+    this.flash(tr('{n} szó/perc', { n: wpm }), true);
   }
 
   // ---------------------------------------------------------------- rendering
@@ -258,11 +259,11 @@ export class Reader {
   renderInfo() {
     const s = settings();
     const { t, n } = this.doc;
-    this.info.wpm.textContent = `${s.wpm} sz/p`;
-    this.info.count.textContent = `${formatNumber(this.i + 1)} / ${formatNumber(n)}`;
+    this.info.wpm.textContent = tr('{n} sz/p', { n: s.wpm });
+    this.info.count.textContent = `${num(this.i + 1)} / ${num(n)}`;
     const ch = chapterAt(t.chapterStarts, this.i);
     this.info.chapter.textContent = (t.chapterStarts.length > 1 && t.chapterTitles[ch]) || this.doc.item.title;
-    const left = formatDuration((n - this.i) * this.avgMs);
+    const left = shortDuration((n - this.i) * this.avgMs);
     this.info.left.textContent = left.startsWith('<') ? left : `~${left}`;
     this.info.bar.style.transform = `scaleX(${n > 1 ? this.i / (n - 1) : 1})`;
   }
@@ -429,25 +430,25 @@ export class Reader {
     const { item } = this.doc;
     return `<div class="rp-head"><div class="rp-title"><b>${esc(title || item.title)}</b>${title ? '' : `<span>${esc(item.author || '')}</span>`}</div>
       <span class="rp-pct">${fmtPct(this.i, this.doc.n)}</span>
-      <button type="button" class="icon-btn" data-act="close" aria-label="Bezárás">${icon('close')}</button></div>`;
+      <button type="button" class="icon-btn" data-act="close" aria-label="${tr('Bezárás')}">${icon('close')}</button></div>`;
   }
 
   panel_menu() {
     const b = (act, ic, label, extra = '') => `<button type="button" class="rp-act ${extra}" data-act="${act}">${icon(ic)}<span>${label}</span></button>`;
     return `${this.head()}
       <div class="rp-actions">
-        ${b('resume', 'play', 'Folytatás', 'primary')}
-        ${b('restart', 'restart', 'Elölről')}
-        ${b('loop', 'loop', this.loop ? 'Ismétlés: be' : 'Ismétlés: ki', this.loop ? 'on' : '')}
-        ${b('para', 'para', 'Bekezdés')}
-        ${this.doc.t.chapterStarts.length > 1 ? b('chapters', 'list', 'Fejezetek') : ''}
-        ${b('fullscreen', 'expand', 'Teljes képernyő')}
-        ${b('tv', 'tv', 'TV-re')}
-        ${b('help', 'help', 'Gesztusok')}
-        ${b('library', 'books', 'Könyvtár')}
+        ${b('resume', 'play', tr('Folytatás'), 'primary')}
+        ${b('restart', 'restart', tr('Elölről'))}
+        ${b('loop', 'loop', this.loop ? tr('Ismétlés: be') : tr('Ismétlés: ki'), this.loop ? 'on' : '')}
+        ${b('para', 'para', tr('Bekezdés'))}
+        ${this.doc.t.chapterStarts.length > 1 ? b('chapters', 'list', tr('Fejezetek')) : ''}
+        ${b('fullscreen', 'expand', tr('Teljes képernyő'))}
+        ${b('tv', 'tv', tr('TV-re'))}
+        ${b('help', 'help', tr('Gesztusok'))}
+        ${b('library', 'books', tr('Könyvtár'))}
       </div>
       <div class="rp-quick controls"></div>
-      <a class="rp-more" href="#/settings">Összes beállítás</a>`;
+      <a class="rp-more" href="#/settings">${tr('Összes beállítás')}</a>`;
   }
 
   panel_para() {
@@ -460,7 +461,7 @@ export class Reader {
       if (flags[j] & 4 && j < b) html += '</p><p>';
     }
     html += '</p>';
-    return `${this.head('Bekezdés')}<p class="rp-note">Koppints egy szóra, és onnan folytatod.</p><div class="rp-para">${html}</div>`;
+    return `${this.head(tr('Bekezdés'))}<p class="rp-note">${tr('Koppints egy szóra, és onnan folytatod.')}</p><div class="rp-para">${html}</div>`;
   }
 
   panel_chapters() {
@@ -468,71 +469,72 @@ export class Reader {
     const cur = chapterAt(chapterStarts, this.i);
     const items = chapterStarts.map((start, k) => `<button type="button" class="rp-chapter${k === cur ? ' current' : ''}" data-jump="${start}">
       <span>${esc(chapterTitles[k] || `${k + 1}.`)}</span><small>${fmtPct(start, this.doc.n)}</small></button>`).join('');
-    return `${this.head('Fejezetek')}<div class="rp-chapters">${items}</div>`;
+    return `${this.head(tr('Fejezetek'))}<div class="rp-chapters">${items}</div>`;
   }
 
   panel_end() {
-    return `${this.head()}<div class="rp-end"><p class="rp-end-word">Vé<span class="piv">g</span>e</p><p>A szöveg végére értél.</p>
+    return `${this.head()}<div class="rp-end"><p class="rp-end-word">${tr('Vé<span class="piv">g</span>e')}</p><p>${tr('A szöveg végére értél.')}</p>
       <div class="rp-actions">
-        <button type="button" class="rp-act primary" data-act="restart-play">${icon('restart')}<span>Elölről</span></button>
-        <button type="button" class="rp-act" data-act="loop-play">${icon('loop')}<span>Ismétlés bekapcsolása</span></button>
-        <button type="button" class="rp-act" data-act="library">${icon('books')}<span>Könyvtár</span></button>
+        <button type="button" class="rp-act primary" data-act="restart-play">${icon('restart')}<span>${tr('Elölről')}</span></button>
+        <button type="button" class="rp-act" data-act="loop-play">${icon('loop')}<span>${tr('Ismétlés bekapcsolása')}</span></button>
+        <button type="button" class="rp-act" data-act="library">${icon('books')}<span>${tr('Könyvtár')}</span></button>
       </div></div>`;
   }
 
   panel_tv() {
     const step = (n, html) => `<li><span class="tv-n">${n}</span><span>${html}</span></li>`;
-    return `${this.head('Olvasás a TV-n')}<div class="rp-tv">
-      <p class="rp-note">A telefon képernyőjét tükrözöd a TV-re. A telefon marad a távirányító: ugyanazok a gesztusok működnek.</p>
+    return `${this.head(tr('Olvasás a TV-n'))}<div class="rp-tv">
+      <p class="rp-note">${tr('A telefon képernyőjét tükrözöd a TV-re. A telefon marad a távirányító: ugyanazok a gesztusok működnek.')}</p>
       <ol class="tv-steps">
-        ${step(1, 'Kapcsold be a TV-t (Chromecast, Google TV vagy okos-TV). Legyen a telefonnal ugyanazon a Wi-Fi-hálózaton.')}
-        ${step(2, 'Húzd le kétszer a képernyő tetejét, és koppints a <b>Képernyő átküldése</b> csempére. Más telefonokon a neve <b>Smart View</b>, <b>Cast</b> vagy <b>Vezeték nélküli kijelző</b>.')}
-        ${step(3, 'Válaszd ki a TV-t. Ha nincs ilyen csempe: <b>Google Home</b> alkalmazás → a TV → <b>Képernyő átküldése</b>.')}
-        ${step(4, 'Gyere vissza ide, és kapcsold be a TV-módot: nagyobb lesz a betű és a sarokinfó.')}
+        ${step(1, tr('Kapcsold be a TV-t (Chromecast, Google TV vagy okos-TV). Legyen a telefonnal ugyanazon a Wi-Fi-hálózaton.'))}
+        ${step(2, tr('Húzd le kétszer a képernyő tetejét, és koppints a <b>Képernyő átküldése</b> csempére. Más telefonokon a neve <b>Smart View</b>, <b>Cast</b> vagy <b>Vezeték nélküli kijelző</b>.'))}
+        ${step(3, tr('Válaszd ki a TV-t. Ha nincs ilyen csempe: <b>Google Home</b> alkalmazás → a TV → <b>Képernyő átküldése</b>.'))}
+        ${step(4, tr('Gyere vissza ide, és kapcsold be a TV-módot: nagyobb lesz a betű és a sarokinfó.'))}
       </ol>
       <div class="rp-tv-controls controls"></div>
-      <p class="rp-note">Tipp: tükrözés közben nyugodtan vedd le a telefon fényerejét, a TV-n ugyanolyan marad. A tükrözést ugyanott állítod le, ahol elindítottad.</p>
-      <button type="button" class="btn primary wide" data-act="resume">${icon('play')}<span>Olvasás folytatása</span></button>
+      <p class="rp-note">${tr('Tipp: tükrözés közben nyugodtan vedd le a telefon fényerejét, a TV-n ugyanolyan marad. A tükrözést ugyanott állítod le, ahol elindítottad.')}</p>
+      <button type="button" class="btn primary wide" data-act="resume">${icon('play')}<span>${tr('Olvasás folytatása')}</span></button>
     </div>`;
   }
 
   panel_help() {
-    const back = settings().swipeBack === 'left' ? 'balra' : 'jobbra';
-    const fwd = settings().swipeBack === 'left' ? 'jobbra' : 'balra';
+    const left = settings().swipeBack === 'left';
+    const back = left ? tr('Legyintés balra') : tr('Legyintés jobbra');
+    const fwd = left ? tr('Legyintés jobbra') : tr('Legyintés balra');
     const row = (g, d) => `<div class="help-row"><b>${g}</b><span>${d}</span></div>`;
-    return `${this.head('Gesztusok')}<div class="rp-help">
-      <h4>Olvasás közben</h4>
-      ${row('Nyomva tartás', 'megáll, amíg nyomod, elengedve folytatja')}
-      ${row('Koppintás', 'megállítja')}
-      ${row('Húzás fel / le', 'gyorsabb / lassabb')}
-      ${row(`Legyintés ${back}`, 'vissza az előző mondat elejére (többször is lehet)')}
-      ${row(`Legyintés ${fwd}`, 'egy mondattal előre')}
-      <h4>Megállítva</h4>
-      ${row('Koppintás jobb oldalt', 'egy szóval előre')}
-      ${row('Koppintás bal oldalt', 'egy szóval vissza')}
-      ${row('Koppintás középen', 'folytatja')}
-      ${row('☰ fent középen', 'menü: elölről, ismétlés, fejezetek, beállítások')}
-      <button type="button" class="btn primary wide" data-act="close">Értem</button></div>`;
+    return `${this.head(tr('Gesztusok'))}<div class="rp-help">
+      <h4>${tr('Olvasás közben')}</h4>
+      ${row(tr('Nyomva tartás'), tr('megáll, amíg nyomod, elengedve folytatja'))}
+      ${row(tr('Koppintás'), tr('megállítja'))}
+      ${row(tr('Húzás fel / le'), tr('gyorsabb / lassabb'))}
+      ${row(back, tr('vissza az előző mondat elejére (többször is lehet)'))}
+      ${row(fwd, tr('egy mondattal előre'))}
+      <h4>${tr('Megállítva')}</h4>
+      ${row(tr('Koppintás jobb oldalt'), tr('egy szóval előre'))}
+      ${row(tr('Koppintás bal oldalt'), tr('egy szóval vissza'))}
+      ${row(tr('Koppintás középen'), tr('folytatja'))}
+      ${row(tr('☰ fent középen'), tr('menü: elölről, ismétlés, fejezetek, beállítások'))}
+      <button type="button" class="btn primary wide" data-act="close">${tr('Értem')}</button></div>`;
   }
 
   onPanelClick(e) {
     const word = e.target.closest('[data-i]');
     if (word) { this.closePanel(); this.jumpTo(Number(word.dataset.i)); return; }
     const jump = e.target.closest('[data-jump]');
-    if (jump) { this.closePanel(); this.jumpTo(Number(jump.dataset.jump), 'Fejezet eleje'); return; }
+    if (jump) { this.closePanel(); this.jumpTo(Number(jump.dataset.jump), tr('Fejezet eleje')); return; }
     if (e.target.closest('.rp-more')) { this.closePanel(); return; }
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (!act) return;
     switch (act) {
       case 'close': this.closePanel(); break;
       case 'resume': this.closePanel(); this.play(); break;
-      case 'restart': this.closePanel(); this.jumpTo(0, 'Elölről'); break;
+      case 'restart': this.closePanel(); this.jumpTo(0, tr('Elölről')); break;
       case 'restart-play': this.closePanel(); this.i = 0; this.play(); break;
       case 'loop':
         this.loop = !this.loop;
         this.saveProgress(true);
-        e.target.closest('[data-act]').outerHTML = `<button type="button" class="rp-act ${this.loop ? 'on' : ''}" data-act="loop">${icon('loop')}<span>${this.loop ? 'Ismétlés: be' : 'Ismétlés: ki'}</span></button>`;
-        toast(this.loop ? 'A szöveg végén újra kezdi.' : 'Ismétlés kikapcsolva.');
+        e.target.closest('[data-act]').outerHTML = `<button type="button" class="rp-act ${this.loop ? 'on' : ''}" data-act="loop">${icon('loop')}<span>${this.loop ? tr('Ismétlés: be') : tr('Ismétlés: ki')}</span></button>`;
+        toast(this.loop ? tr('A szöveg végén újra kezdi.') : tr('Ismétlés kikapcsolva.'));
         break;
       case 'loop-play': this.loop = true; this.closePanel(); this.i = 0; this.saveProgress(true); this.play(); break;
       case 'para': this.openPanel('para'); break;

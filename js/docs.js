@@ -4,6 +4,8 @@ import { tokenize } from './core/tokenize.js';
 import { remapIndex } from './core/remap.js';
 import { countWords, fileToBook, textToBook } from './core/convert.js';
 import { settings, replaceAll } from './settings.js';
+import { fail } from './core/errors.js';
+import { t, lang } from './i18n.js';
 
 export async function listLibrary() {
   const [items, progress] = await Promise.all([db.getAll('items'), db.getAll('progress')]);
@@ -13,7 +15,7 @@ export async function listLibrary() {
 
 const autoTitle = (text) => {
   const first = text.trim().split(/\n/)[0].replace(/\s+/g, ' ');
-  return first.length > 40 ? `${first.slice(0, 40).replace(/\s\S*$/, '')}…` : first || 'Névtelen szöveg';
+  return first.length > 40 ? `${first.slice(0, 40).replace(/\s\S*$/, '')}…` : first || t('Névtelen szöveg');
 };
 
 /** Create or update an own text. Keeps the reading position across edits. */
@@ -49,7 +51,7 @@ async function saveBook(book, extra) {
   const now = Date.now();
   const id = extra.id || db.uid('f');
   await db.saveDoc({
-    id, kind: extra.kind || 'file', title: book.title || 'Névtelen', author: book.author || '', lang: book.lang || '',
+    id, kind: extra.kind || 'file', title: book.title || t('Névtelen'), author: book.author || '', lang: book.lang || '',
     wordCount: countWords(book.chapters), source: extra.source || '', fileName: extra.fileName || '',
     createdAt: now, updatedAt: now,
   }, book.chapters);
@@ -61,7 +63,7 @@ export async function importFile(file) {
   const book = /\.pdf$/i.test(file.name) || file.type === 'application/pdf'
     ? await pdfToBook(bytes, file.name)
     : await fileToBook(file.name, bytes);
-  if (!countWords(book.chapters)) throw new Error('A fájlban nem találtam szöveget.');
+  if (!countWords(book.chapters)) throw fail('A fájlban nem találtam szöveget.');
   return saveBook(book, { kind: 'file', fileName: file.name });
 }
 
@@ -109,13 +111,13 @@ export async function importSharedText(title, text) {
 // ---------------------------------------------------------------- catalog
 export async function fetchCatalog() {
   const res = await fetch('books/catalog.json', { cache: 'no-cache' });
-  if (!res.ok) throw new Error('A könyvlista most nem érhető el.');
+  if (!res.ok) throw fail('A könyvlista most nem érhető el.');
   return res.json();
 }
 
 export async function downloadCatalogBook(entry) {
   const res = await fetch(entry.file);
-  if (!res.ok) throw new Error(`${entry.title}: a letöltés nem sikerült (${res.status}).`);
+  if (!res.ok) throw fail('{title}: a letöltés nem sikerült ({status}).', { title: entry.title, status: res.status });
   const b = await res.json();
   const now = Date.now();
   await db.saveDoc({
@@ -149,7 +151,7 @@ export async function exportBackup({ withBooks }) {
 }
 
 export async function importBackup(data) {
-  if (data?.app !== 'just-a-reader') throw new Error('Ez nem Just A Reader mentés.');
+  if (data?.app !== 'just-a-reader') throw fail('Ez nem Just A Reader mentés.');
   const contentIds = new Set((data.content || []).map((c) => c.id));
   for (const c of data.content || []) await db.put('content', c);
   let restored = 0;
@@ -163,7 +165,17 @@ export async function importBackup(data) {
   return { restored, missingBooks };
 }
 
-export const WELCOME_TEXT = `Szia! Ez egy rövid próbaszöveg, hogy kipróbáld az olvasót.
+export const welcomeText = () => (lang() === 'en' ? WELCOME_EN : WELCOME_HU);
+
+const WELCOME_EN = `Hi! This is a short sample text so you can try the reader.
+While it is running, keep your finger on the screen and it stops. Let go and it continues.
+Swipe up to go faster. Swipe down to slow down.
+If you missed something, flick to the left and it jumps back to the start of the sentence.
+A single tap pauses. While paused, tap the right side to step one word forward, the left side to step one back, and the middle to continue.
+In the menu you can turn on repeat, so this text starts over at the end.
+Happy reading!`;
+
+const WELCOME_HU = `Szia! Ez egy rövid próbaszöveg, hogy kipróbáld az olvasót.
 Olvasás közben tartsd nyomva az ujjad a képernyőn, és megáll. Ha elengeded, folytatja.
 Húzd az ujjad felfelé, és gyorsul. Lefelé húzva lassul.
 Ha lemaradtál valamiről, legyints balra, és visszaugrik a mondat elejére.

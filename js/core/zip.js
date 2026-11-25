@@ -1,3 +1,5 @@
+import { fail } from './errors.js';
+
 // Minimal ZIP reader (stored + deflate) built on DecompressionStream, which
 // exists in modern browsers and in Node ≥ 20. Enough for EPUB and MEK zips.
 
@@ -8,7 +10,7 @@ export async function readZip(input) {
   for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) {
     if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
   }
-  if (eocd < 0) throw new Error('A fájl nem ZIP/EPUB formátumú.');
+  if (eocd < 0) throw fail('A fájl nem ZIP/EPUB formátumú.');
   const count = dv.getUint16(eocd + 10, true);
   let p = dv.getUint32(eocd + 16, true);
   const utf8 = new TextDecoder('utf-8');
@@ -16,7 +18,7 @@ export async function readZip(input) {
   const entries = new Map();
   const lower = new Map();
   for (let n = 0; n < count; n++) {
-    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('Sérült ZIP fájl.');
+    if (dv.getUint32(p, true) !== 0x02014b50) throw fail('Sérült ZIP fájl.');
     const flags = dv.getUint16(p + 8, true);
     const method = dv.getUint16(p + 10, true);
     const csize = dv.getUint32(p + 20, true);
@@ -49,7 +51,7 @@ export async function readZip(input) {
     const data = u8.subarray(start, start + e.csize);
     if (e.method === 0) return data;
     if (e.method === 8) return inflateRaw(data);
-    throw new Error(`Nem támogatott tömörítés (${e.method}).`);
+    throw fail('Nem támogatott tömörítés ({m}).', { m: e.method });
   }
 
   return {

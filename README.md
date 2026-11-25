@@ -6,6 +6,8 @@ Szavanként villantó gyorsolvasó telefonra. Beírt vagy bemásolt szöveget é
 
 **Telepítés (ajánlott):** a könyvtár tetején a *Telepítés* gomb (vagy Chrome ⋮ menü → *Alkalmazás telepítése*). Utána „Just A Reader” ikonról indul, teljes képernyőn, a böngésző címsora és a webcím nélkül, internet nélkül is. Böngészőből futtatva a teljes képernyőre váltáskor a Chrome biztonsági okból kiírja a webcímet; ezt csak a telepített alkalmazás kerüli el.
 
+**Nyelv / Language:** a program magyarul és angolul is használható (Beállítások → Nyelv / Language; az *Automatikus* a telefon nyelvét követi). The app has a full English interface too.
+
 **TV-n olvasás:** az olvasó menüjében a *TV-re* gomb lépésenként leírja a képernyő-tükrözést (Android: *Képernyő átküldése* / *Smart View*, Chromecast, Google TV, okos-TV). A telefon marad a távirányító. A *TV-mód* nagyobb betűt és sarokinfót ad, hogy messziről is olvasható legyen.
 
 ## Vezérlés

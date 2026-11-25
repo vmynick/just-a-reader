@@ -2,6 +2,7 @@
 import { readZip } from './zip.js';
 import { htmlToBlocks, blocksToChapters, decodeEntities, shortTitle } from './html2text.js';
 import { markHeadings } from './headings.js';
+import { fail } from './errors.js';
 
 // Front/back matter we do not want to flash word by word.
 export const SKIP_TITLE_RE = /^(címlap|borító|cover|tartalom|tartalomjegyzék|contents|table of contents|jegyzetek|lábjegyzetek|notes|endnotes|footnotes|impresszum|colophon|imprint|uncopyright|copyright|title ?page|half ?title|list of illustrations)$/i;
@@ -85,7 +86,7 @@ export async function epubToBook(bytes) {
   const zip = await readZip(bytes);
   const container = await zip.text('META-INF/container.xml');
   const opfPath = container && attrs(container.match(/<rootfile\b([^>]*)>/i)?.[1] || '')['full-path'];
-  if (!opfPath) throw new Error('Hibás EPUB: nem található a tartalomjegyzék (OPF).');
+  if (!opfPath) throw fail('Hibás EPUB: nem található a tartalomjegyzék (OPF).');
   const opf = await zip.text(opfPath);
   const base = dirOf(opfPath);
 
@@ -148,6 +149,6 @@ export async function epubToBook(bytes) {
     }
     chapters.push({ title: shortTitle(tocTitle || firstHeading || `${chapters.length + 1}.`), text });
   }
-  if (!chapters.length) throw new Error('Az EPUB-ban nem találtam olvasható szöveget.');
+  if (!chapters.length) throw fail('Az EPUB-ban nem találtam olvasható szöveget.');
   return { title, author, lang, chapters };
 }

@@ -1,13 +1,15 @@
 // App shell: routing, first-run setup, share-target inbox, service worker.
-import { apply, settings, update } from './settings.js';
+import { apply, settings, update, onChange } from './settings.js';
 import { Reader } from './reader.js';
 import { renderLibrary, renderBrowse, renderEditor, renderSettings, renderStats } from './views.js';
 import * as docs from './docs.js';
 import { requestPersistence } from './store.js';
 import { exitFullscreen } from './fullscreen.js';
 import { $, toast } from './ui.js';
+import { t, errText, applyLangToDom } from './i18n.js';
 
 apply();
+applyLangToDom();
 
 const views = {
   library: $('#v-library'), browse: $('#v-browse'), editor: $('#v-editor'),
@@ -44,17 +46,17 @@ async function firstRun() {
   if (settings().firstRunDone) return;
   try {
     const list = await docs.listLibrary();
-    if (!list.some((x) => x.kind === 'text')) await docs.saveText({ title: 'Próbaszöveg: így működik', text: docs.WELCOME_TEXT });
+    if (!list.some((x) => x.kind === 'text')) await docs.saveText({ title: t('Próbaszöveg: így működik'), text: docs.welcomeText() });
     if (current === 'library') renderLibrary(views.library);
     const cat = await docs.fetchCatalog();
     const pre = cat.books.filter((b) => b.preinstalled && !list.some((x) => x.id === b.id));
-    if (pre.length) toast(`Első indítás: ${pre.length} könyv letöltése…`, { ms: 60000 });
+    if (pre.length) toast(t('Első indítás: {n} könyv letöltése…', { n: pre.length }), { ms: 60000 });
     for (const b of pre) await docs.downloadCatalogBook(b);
     update({ firstRunDone: true });
-    if (pre.length) toast('Kész, a könyvek a könyvtáradban vannak.');
+    if (pre.length) toast(t('Kész, a könyvek a könyvtáradban vannak.'));
     if (current === 'library') renderLibrary(views.library);
   } catch {
-    toast('A kezdő könyveket most nem sikerült letölteni. A következő indításkor újra megpróbálom.', { ms: 6000 });
+    toast(t('A kezdő könyveket most nem sikerült letölteni. A következő indításkor újra megpróbálom.'), { ms: 6000 });
   }
 }
 
@@ -77,11 +79,11 @@ async function drainShareInbox() {
         added++;
       }
     } catch (err) {
-      toast(`A megosztott tartalmat nem sikerült megnyitni: ${err.message}`, { ms: 6000 });
+      toast(t('A megosztott tartalmat nem sikerült megnyitni: {msg}', { msg: errText(err) }), { ms: 6000 });
     }
     await cache.delete(req);
   }
-  if (added) toast(added === 1 ? 'Megosztott tartalom hozzáadva.' : `${added} megosztott tétel hozzáadva.`);
+  if (added) toast(added === 1 ? t('Megosztott tartalom hozzáadva.') : t('{n} megosztott tétel hozzáadva.', { n: added }));
   if (current === 'library') renderLibrary(views.library);
 }
 
@@ -94,11 +96,12 @@ function registerSW() {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadController || reloading || current === 'reader') return;
     reloading = true;
-    toast('Új verzió érhető el.', { action: 'Frissítés', onAction: () => location.reload(), ms: 10000 });
+    toast(t('Új verzió érhető el.'), { action: t('Frissítés'), onAction: () => location.reload(), ms: 10000 });
   });
 }
 
 window.addEventListener('hashchange', route);
+onChange((s, patch) => { if ('lang' in patch) { applyLangToDom(); route(); } });
 
 (async () => {
   if (location.pathname.endsWith('/share')) history.replaceState(null, '', './#/');

@@ -2,9 +2,11 @@
 // the reader's quick menu so both stay in sync.
 import { settings, update, onChange, THEMES, FONTS, WPM_MIN, WPM_MAX } from './settings.js';
 import { esc } from './ui.js';
+import { t, dec1 } from './i18n.js';
 
 export const SCHEMA = {
-  wpm: { label: 'Sebesség', type: 'range', min: WPM_MIN, max: WPM_MAX, step: 10, fmt: (v) => `${v} szó/perc` },
+  lang: { label: '', aria: 'Nyelv', type: 'seg', options: [['hu', 'Magyar', 'native'], ['en', 'English', 'native'], ['auto', 'Automatikus']], hint: 'Automatikus: a telefon nyelvét követi.' },
+  wpm: { label: 'Sebesség', type: 'range', min: WPM_MIN, max: WPM_MAX, step: 10, fmt: (v) => t('{n} szó/perc', { n: v }) },
   chunk: { label: 'Szavak villanásonként', type: 'seg', options: [[1, '1'], [2, '2'], [3, '3']] },
   theme: { label: 'Téma', type: 'theme' },
   font: { label: 'Betűtípus', type: 'select', options: Object.entries(FONTS).map(([k, v]) => [k, v.name]) },
@@ -16,12 +18,12 @@ export const SCHEMA = {
   orp: { label: 'Fókuszbetű kiemelése', type: 'toggle', hint: 'A szó egyik betűje színes, és mindig ugyanott áll, így nem kell mozgatnod a szemed.' },
   guides: { label: 'Segédvonalak a szó fölött és alatt', type: 'toggle' },
   smartPauses: { label: 'Okos szünetek', type: 'toggle', hint: 'Mondat végén, vesszőnél és hosszú szónál a szó tovább marad kint.' },
-  pauseStrength: { label: 'Szünetek hossza', type: 'range', min: 0.5, max: 2.5, step: 0.1, fmt: (v) => `${Number(v).toFixed(1)}×` },
+  pauseStrength: { label: 'Szünetek hossza', type: 'range', min: 0.5, max: 2.5, step: 0.1, fmt: (v) => `${dec1(v)}×` },
   ramp: { label: 'Lassú indulás', type: 'toggle', hint: 'Indításkor az első néhány szó lassabban jön.' },
   train: { label: 'Fokozatos gyorsítás', type: 'toggle', hint: 'Olvasás közben magától gyorsul, amíg el nem éri a felső határt.' },
-  trainStep: { label: 'Ennyivel gyorsul', type: 'range', min: 5, max: 50, step: 5, fmt: (v) => `+${v} szó/perc` },
-  trainEvery: { label: 'Ilyen gyakran', type: 'range', min: 30, max: 300, step: 30, fmt: (v) => `${v} másodpercenként` },
-  trainMax: { label: 'Felső határ', type: 'range', min: 200, max: WPM_MAX, step: 10, fmt: (v) => `${v} szó/perc` },
+  trainStep: { label: 'Ennyivel gyorsul', type: 'range', min: 5, max: 50, step: 5, fmt: (v) => t('+{n} szó/perc', { n: v }) },
+  trainEvery: { label: 'Ilyen gyakran', type: 'range', min: 30, max: 300, step: 30, fmt: (v) => t('{n} másodpercenként', { n: v }) },
+  trainMax: { label: 'Felső határ', type: 'range', min: 200, max: WPM_MAX, step: 10, fmt: (v) => t('{n} szó/perc', { n: v }) },
   cornerInfo: { label: 'Sebesség és szószám a sarkokban', type: 'toggle' },
   contextLine: { label: 'Mondat mutatása megállításkor', type: 'toggle' },
   orientation: { label: 'Tájolás olvasáskor', type: 'seg', options: [['landscape', 'Fekvő'], ['portrait', 'Álló'], ['auto', 'Automatikus']] },
@@ -35,34 +37,35 @@ function controlHtml(key) {
   const c = SCHEMA[key];
   const v = settings()[key];
   const id = `c-${key}-${Math.random().toString(36).slice(2, 7)}`;
-  const hint = c.hint ? `<small class="hint">${esc(c.hint)}</small>` : '';
+  const hint = c.hint ? `<small class="hint">${esc(t(c.hint))}</small>` : '';
+  const label = esc(t(c.label));
   switch (c.type) {
     case 'range':
       return `<div class="ctl ctl-range" data-key="${key}">
-        <label for="${id}"><span>${esc(c.label)}</span><output>${esc(c.fmt(v))}</output></label>
+        <label for="${id}"><span>${label}</span><output>${esc(c.fmt(v))}</output></label>
         <div class="range-row">
-          <button type="button" class="step" data-step="-1" aria-label="Kevesebb">−</button>
+          <button type="button" class="step" data-step="-1" aria-label="${t('Kevesebb')}">−</button>
           <input id="${id}" type="range" min="${c.min}" max="${c.max}" step="${c.step}" value="${v}">
-          <button type="button" class="step" data-step="1" aria-label="Több">+</button>
+          <button type="button" class="step" data-step="1" aria-label="${t('Több')}">+</button>
         </div>${hint}</div>`;
     case 'toggle':
       return `<label class="ctl ctl-toggle" data-key="${key}" for="${id}">
-        <span class="ctl-text"><span>${esc(c.label)}</span>${hint}</span>
+        <span class="ctl-text"><span>${label}</span>${hint}</span>
         <input id="${id}" type="checkbox" role="switch" ${v ? 'checked' : ''}><span class="switch" aria-hidden="true"></span></label>`;
     case 'seg':
-      return `<div class="ctl ctl-seg" data-key="${key}"><span class="ctl-label">${esc(c.label)}</span>
-        <div class="seg" role="radiogroup" aria-label="${esc(c.label)}">${c.options.map(([ov, ol]) =>
-          `<button type="button" role="radio" aria-checked="${String(ov) === String(v)}" data-v="${esc(ov)}">${esc(ol)}</button>`).join('')}</div>${hint}</div>`;
+      return `<div class="ctl ctl-seg" data-key="${key}">${label ? `<span class="ctl-label">${label}</span>` : ''}
+        <div class="seg" role="radiogroup" aria-label="${label || esc(t(c.aria))}">${c.options.map(([ov, ol, native]) =>
+          `<button type="button" role="radio" aria-checked="${String(ov) === String(v)}" data-v="${esc(ov)}">${esc(native ? ol : t(ol))}</button>`).join('')}</div>${hint}</div>`;
     case 'select':
-      return `<div class="ctl ctl-select" data-key="${key}"><label for="${id}">${esc(c.label)}</label>
-        <select id="${id}">${c.options.map(([ov, ol]) => `<option value="${esc(ov)}" ${ov === v ? 'selected' : ''}>${esc(ol)}</option>`).join('')}</select></div>`;
+      return `<div class="ctl ctl-select" data-key="${key}"><label for="${id}">${label}</label>
+        <select id="${id}">${c.options.map(([ov, ol]) => `<option value="${esc(ov)}" ${ov === v ? 'selected' : ''}>${esc(t(ol))}</option>`).join('')}</select></div>`;
     case 'color':
-      return `<label class="ctl ctl-color" data-key="${key}" for="${id}"><span>${esc(c.label)}</span><input id="${id}" type="color" value="${esc(v)}"></label>`;
+      return `<label class="ctl ctl-color" data-key="${key}" for="${id}"><span>${label}</span><input id="${id}" type="color" value="${esc(v)}"></label>`;
     case 'theme':
-      return `<div class="ctl ctl-theme" data-key="theme"><span class="ctl-label">${esc(c.label)}</span>
-        <div class="swatches">${Object.entries(THEMES).map(([k, t]) =>
-          `<button type="button" class="swatch" data-v="${k}" aria-pressed="${settings().theme === k}" style="--sb:${t.bg};--sf:${t.fg};--sp:${t.pivot}">
-            <span class="sw-word">s<b>z</b>ó</span><span class="sw-name">${esc(t.name)}</span></button>`).join('')}</div></div>`;
+      return `<div class="ctl ctl-theme" data-key="theme"><span class="ctl-label">${label}</span>
+        <div class="swatches">${Object.entries(THEMES).map(([k, th]) =>
+          `<button type="button" class="swatch" data-v="${k}" aria-pressed="${settings().theme === k}" style="--sb:${th.bg};--sf:${th.fg};--sp:${th.pivot}">
+            <span class="sw-word">${t('s<b>z</b>ó')}</span><span class="sw-name">${esc(t(th.name))}</span></button>`).join('')}</div></div>`;
     default: return '';
   }
 }

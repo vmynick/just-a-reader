@@ -65,7 +65,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   max-width: 1180px; margin: 0 auto;
 }
 .lib-head, .sub-head { display: flex; align-items: center; gap: .5rem; min-height: 52px; }
-.brand { font: 700 23px/1.1 var(--serif); margin: 0; letter-spacing: -.01em; flex: 1; }
+.brand { font: 700 clamp(19px, 5.6vw, 23px)/1.1 var(--serif); margin: 0; letter-spacing: -.01em; flex: 1; }
 .head-actions { display: flex; align-items: center; gap: .25rem; }
 .install-btn { margin-right: .25rem; }
 .sub-head h1 { font: 700 21px/1.2 var(--serif); margin: 0; }

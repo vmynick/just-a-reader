@@ -18,7 +18,7 @@ export const FONTS = {
 };
 
 export const DEFAULTS = {
-  wpm: 300,
+  wpm: 250,
   chunk: 1,
   orp: true,
   guides: true,
@@ -53,7 +53,14 @@ let current = load();
 const listeners = new Set();
 
 function load() {
-  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}') }; } catch { return { ...DEFAULTS }; }
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { /* defaults */ }
+  // v2: the default speed became 250; an untouched old default (300) moves with it.
+  if ((saved.v || 1) < 2) {
+    if (saved.wpm === 300) saved.wpm = 250;
+    saved.v = 2;
+  }
+  return { ...DEFAULTS, ...saved };
 }
 
 export const settings = () => current;

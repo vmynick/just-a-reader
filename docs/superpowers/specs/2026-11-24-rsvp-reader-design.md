@@ -37,7 +37,7 @@ Focus letter (ORP) at a fixed anchor, smart pauses (sentence/clause/paragraph/lo
 - Visual direction: night-blue paper (#161a33), warm white type, amber focus letter; Literata for reading, Atkinson Hyperlegible for UI; six themes incl. AMOLED, paper, sepia, high contrast.
 
 ## Calls made by the builder (correctable)
-- Default 300 wpm, focus anchor at 40 % of the width, swipe-left = back (switchable in settings).
+- Default 250 wpm, focus anchor at 40 % of the width, swipe-left = back (switchable in settings).
 - Swipe back goes to the current sentence start, or the previous sentence if fewer than 3 words into the current one.
 - Six books preinstalled (3 HU, 3 EN); a short Hungarian welcome text explains the gestures.
 - Only public-domain works (author dead 70+ years and published before 1931).

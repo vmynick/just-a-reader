@@ -6,7 +6,7 @@ import {
   orpIndex, chunkAt, prevChunkStart, delayFor, rampFactor, averageMsPerWord, formatDuration, formatNumber,
 } from './core/timing.js';
 import * as db from './store.js';
-import { settings, update, onChange, clamp, WPM_MIN, WPM_MAX } from './settings.js';
+import { settings, update, onChange, clamp, wordPx, WPM_MIN, WPM_MAX } from './settings.js';
 import { renderControls } from './controls.js';
 import { enterFullscreen, exitFullscreen, isFullscreen, lockOrientation } from './fullscreen.js';
 import { $, esc, toast, vibrate, fmtPct } from './ui.js';
@@ -239,11 +239,12 @@ export class Reader {
     const anchor = Math.round(W * (focus ? 0.4 : 0.5));
     this.root.style.setProperty('--anchor', `${anchor}px`);
     const el = this.wordEl;
-    el.style.fontSize = `${s.fontSize}px`;
+    const px = wordPx(s);
+    el.style.fontSize = `${px}px`;
     let w = el.offsetWidth;
     const maxW = W * 0.94;
     if (w > maxW) {
-      el.style.fontSize = `${Math.max(12, Math.floor(s.fontSize * (maxW / w)))}px`;
+      el.style.fontSize = `${Math.max(12, Math.floor(px * (maxW / w)))}px`;
       w = el.offsetWidth;
     }
     let left;
@@ -413,6 +414,7 @@ export class Reader {
     p.scrollTop = 0;
     p.onclick = (e) => this.onPanelClick(e);
     if (kind === 'menu') this.disposeControls = renderControls($('.rp-quick', p), ['wpm', 'fontSize', 'chunk', 'theme', 'orp', 'smartPauses', 'ramp', 'train']);
+    if (kind === 'tv') this.disposeControls = renderControls($('.rp-tv-controls', p), ['tvMode', 'fontSize', 'orientation']);
     if (kind === 'para' || kind === 'chapters') requestAnimationFrame(() => $('.current', p)?.scrollIntoView({ block: 'center' }));
   }
 
@@ -440,6 +442,7 @@ export class Reader {
         ${b('para', 'para', 'Bekezdés')}
         ${this.doc.t.chapterStarts.length > 1 ? b('chapters', 'list', 'Fejezetek') : ''}
         ${b('fullscreen', 'expand', 'Teljes képernyő')}
+        ${b('tv', 'tv', 'TV-re')}
         ${b('help', 'help', 'Gesztusok')}
         ${b('library', 'books', 'Könyvtár')}
       </div>
@@ -475,6 +478,22 @@ export class Reader {
         <button type="button" class="rp-act" data-act="loop-play">${icon('loop')}<span>Ismétlés bekapcsolása</span></button>
         <button type="button" class="rp-act" data-act="library">${icon('books')}<span>Könyvtár</span></button>
       </div></div>`;
+  }
+
+  panel_tv() {
+    const step = (n, html) => `<li><span class="tv-n">${n}</span><span>${html}</span></li>`;
+    return `${this.head('Olvasás a TV-n')}<div class="rp-tv">
+      <p class="rp-note">A telefon képernyőjét tükrözöd a TV-re. A telefon marad a távirányító: ugyanazok a gesztusok működnek.</p>
+      <ol class="tv-steps">
+        ${step(1, 'Kapcsold be a TV-t (Chromecast, Google TV vagy okos-TV). Legyen a telefonnal ugyanazon a Wi-Fi-hálózaton.')}
+        ${step(2, 'Húzd le kétszer a képernyő tetejét, és koppints a <b>Képernyő átküldése</b> csempére. Más telefonokon a neve <b>Smart View</b>, <b>Cast</b> vagy <b>Vezeték nélküli kijelző</b>.')}
+        ${step(3, 'Válaszd ki a TV-t. Ha nincs ilyen csempe: <b>Google Home</b> alkalmazás → a TV → <b>Képernyő átküldése</b>.')}
+        ${step(4, 'Gyere vissza ide, és kapcsold be a TV-módot: nagyobb lesz a betű és a sarokinfó.')}
+      </ol>
+      <div class="rp-tv-controls controls"></div>
+      <p class="rp-note">Tipp: tükrözés közben nyugodtan vedd le a telefon fényerejét, a TV-n ugyanolyan marad. A tükrözést ugyanott állítod le, ahol elindítottad.</p>
+      <button type="button" class="btn primary wide" data-act="resume">${icon('play')}<span>Olvasás folytatása</span></button>
+    </div>`;
   }
 
   panel_help() {
@@ -519,6 +538,7 @@ export class Reader {
       case 'para': this.openPanel('para'); break;
       case 'chapters': this.openPanel('chapters'); break;
       case 'help': this.openPanel('help'); break;
+      case 'tv': this.openPanel('tv'); break;
       case 'fullscreen': enterFullscreen(); this.closePanel(); break;
       case 'library': this.closePanel(); this.onExit(); break;
       default:

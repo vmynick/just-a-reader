@@ -28,6 +28,7 @@ export const SCHEMA = {
   fullscreen: { label: 'Teljes képernyő olvasáskor', type: 'toggle' },
   swipeBack: { label: 'Visszatekerés', type: 'seg', options: [['left', 'Balra legyintés'], ['right', 'Jobbra legyintés']] },
   haptics: { label: 'Rezgés legyintéskor', type: 'toggle' },
+  tvMode: { label: 'TV-mód', type: 'toggle', hint: 'Nagyobb betű, sarokinfó és mondat, hogy képernyő-tükrözéskor a TV-n messziről is jól olvasható legyen.' },
 };
 
 function controlHtml(key) {

@@ -41,7 +41,11 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' bypasses the browser's HTTP cache (GitHub Pages: max-age=600), so a new
+  // version never mixes freshly fetched files with stale ones.
+  event.waitUntil(caches.open(VERSION)
+    .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {

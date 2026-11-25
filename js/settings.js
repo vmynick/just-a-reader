@@ -42,6 +42,7 @@ export const DEFAULTS = {
   fullscreen: true,
   swipeBack: 'left', // finger moves left = go back
   haptics: true,
+  tvMode: false,
   firstRunDone: false,
   helpSeen: false,
 };
@@ -81,7 +82,8 @@ export function apply() {
   r.setProperty('--fg', s.fg);
   r.setProperty('--pivot', s.pivot);
   r.setProperty('--word-font', (FONTS[s.font] || FONTS.literata).css);
-  r.setProperty('--word-size', `${s.fontSize}px`);
+  r.setProperty('--word-size', `${wordPx(s)}px`);
+  document.documentElement.dataset.tv = String(!!s.tvMode);
   r.setProperty('--word-weight', s.bold ? '700' : '400');
   document.documentElement.dataset.light = String(luminance(s.bg) > 0.5);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', s.bg);
@@ -95,6 +97,9 @@ function luminance(hex) {
   });
   return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
 }
+
+/** Word size on screen: TV mode enlarges it for reading from the sofa. */
+export const wordPx = (s) => Math.round(s.fontSize * (s.tvMode ? 1.35 : 1));
 
 export const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 export const WPM_MIN = 60;

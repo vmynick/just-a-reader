@@ -24,6 +24,7 @@ const P = {
   help: 'M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3 M12 17h.01 M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z',
   paste: 'M9 4h6v3H9z M9 5H6v16h12V5h-3',
   save: 'M5 4h11l3 3v13H5z M8 4v5h7V4 M8 20v-6h8v6',
+  tv: 'M3 6h18v11H3z M8 21h8 M12 17v4 M7 3l5 3 5-3',
 };
 
 export function icon(name, cls = '') {

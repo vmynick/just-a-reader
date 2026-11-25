@@ -3,7 +3,7 @@ import * as docs from './docs.js';
 import * as db from './store.js';
 import { settings, update } from './settings.js';
 import { renderControls } from './controls.js';
-import { enterFullscreen } from './fullscreen.js';
+import { enterFullscreen, canInstall, installApp, onInstallChange, isInstalledApp } from './fullscreen.js';
 import { orpIndex, formatNumber } from './core/timing.js';
 import { $, esc, toast, ask, sheet, fmtPct, readingTime, downloadBlob } from './ui.js';
 import { icon } from './icons.js';
@@ -76,6 +76,7 @@ export async function renderLibrary(el) {
     <header class="lib-head">
       <h1 class="brand">Just A Reader</h1>
       <div class="head-actions">
+        <button type="button" class="btn small install-btn" data-act="install" ${canInstall() ? '' : 'hidden'}>${icon('download')}<span>Telepítés</span></button>
         <a class="icon-btn" href="#/stats" aria-label="Statisztika">${icon('chart')}</a>
         <a class="icon-btn" href="#/settings" aria-label="Beállítások">${icon('gear')}</a>
       </div>
@@ -105,6 +106,8 @@ export async function renderLibrary(el) {
     <input type="file" id="file-input" hidden accept=".epub,.txt,.md,.html,.htm,.xhtml,.fb2,.zip,.pdf,application/epub+zip,text/plain,application/pdf,text/html">`;
 
   const byId = new Map(list.map((x) => [x.id, x]));
+  el._offInstall?.();
+  el._offInstall = onInstallChange(() => { const b = $('.install-btn', el); if (b) b.hidden = !canInstall(); });
   el.onclick = async (e) => {
     const btn = e.target.closest('[data-act]');
     if (!btn) return;
@@ -132,6 +135,9 @@ export async function renderLibrary(el) {
       case 'toggle-shorts':
         sessionStorage.setItem('jar.allShorts', showAllShorts ? '0' : '1');
         renderLibrary(el);
+        break;
+      case 'install':
+        if (await installApp()) toast('Telepítve. Ezentúl a „Just A Reader” ikonról indítsd.', { ms: 6000 });
         break;
       default:
     }
@@ -360,6 +366,13 @@ export async function renderSettings(el) {
         </div>
         <p class="note storage"></p>
       </section>
+      <section><h2>Alkalmazás</h2>
+        ${isInstalledApp()
+    ? '<p class="note">Telepített alkalmazásként fut: saját ikonról indul, teljes képernyőn, címsor nélkül.</p>'
+    : `<p class="note">Telepítve saját ikonról indul „Just A Reader” néven, teljes képernyőn, a böngésző címsora és a webcím nélkül, internet nélkül is.</p>
+        <button type="button" class="btn primary" data-act="install" ${canInstall() ? '' : 'hidden'}>${icon('download')}<span>Alkalmazás telepítése</span></button>
+        <p class="note install-manual" ${canInstall() ? 'hidden' : ''}>Chrome-ban: jobb felső ⋮ menü → <b>Alkalmazás telepítése</b> (vagy <b>Hozzáadás a kezdőképernyőhöz</b>).</p>`}
+      </section>
       <section><h2>Névjegy</h2>
         <p class="note">Just A Reader, ${esc(document.documentElement.dataset.version || '')}. A beépített könyvek közkincsek, a <a href="https://mek.oszk.hu" target="_blank" rel="noopener">Magyar Elektronikus Könyvtárból</a> és a <a href="https://standardebooks.org" target="_blank" rel="noopener">Standard Ebooksból</a> származnak.</p>
         <p class="note"><a href="${REPO_URL}" target="_blank" rel="noopener">Forráskód a GitHubon</a>, új könyvet a <a href="${REPO_URL}/actions/workflows/add-book.yml" target="_blank" rel="noopener">Könyv hozzáadása</a> oldalon vehetsz fel a katalógusba.</p>
@@ -370,7 +383,7 @@ export async function renderSettings(el) {
     renderControls($('[data-group="look"]', el), ['theme', 'font', 'fontSize', 'bold', 'bg', 'fg', 'pivot', 'orp', 'guides', 'cornerInfo', 'contextLine']),
     renderControls($('[data-group="read"]', el), ['wpm', 'chunk', 'smartPauses', 'pauseStrength', 'ramp']),
     renderControls($('[data-group="train"]', el), ['train', 'trainStep', 'trainEvery', 'trainMax']),
-    renderControls($('[data-group="control"]', el), ['orientation', 'fullscreen', 'swipeBack', 'haptics']),
+    renderControls($('[data-group="control"]', el), ['orientation', 'fullscreen', 'swipeBack', 'haptics', 'tvMode']),
   ];
   try {
     const est = await navigator.storage?.estimate?.();
@@ -386,6 +399,9 @@ export async function renderSettings(el) {
       toast('Mentés kész. A Letöltések mappában találod.');
     } else if (act === 'import') $('#bk-file', el).click();
     else if (act === 'help') { update({ helpSeen: false }); toast('A következő megnyitáskor az olvasó megmutatja a gesztusokat.'); }
+    else if (act === 'install') {
+      if (await installApp()) { toast('Telepítve. Ezentúl a „Just A Reader” ikonról indítsd.', { ms: 6000 }); renderSettings(el); }
+    }
   };
   $('#bk-file', el).onchange = async (e) => {
     const f = e.target.files[0];
